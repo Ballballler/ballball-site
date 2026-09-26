@@ -9,6 +9,10 @@
 #   ./deploy/pages.sh                        # 用默认远端 origin / 默认域名
 #   ./deploy/pages.sh --remote git@github.com:Ballballler/ballball-site.git
 #   SITE_URL=https://ballballler.github.io/ballball-site ./deploy/pages.sh
+# 推送时 Git 会用默认 SSH key。若你的 GitHub key 不是默认名
+# （比如 id_ed25519_hotspot），先告诉 Git 用哪一把：
+#   export GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519_hotspot"
+# 长期方案是写 ~/.ssh/config 的 Host github.com 段。
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -46,7 +50,13 @@ git -c user.name="Ballballler" -c user.email="Ballballler@users.noreply.github.c
   commit -q -m "publish: $(date '+%Y-%m-%d %H:%M') 静态站快照"
 
 echo "==> 3/3 推送到 ${REMOTE} 的 ${BRANCH}"
-git push --force "$REMOTE" "$BRANCH"
+# 这个临时仓库里没有 origin，必须先补上远端的真实地址。
+# REMOTE 既可以传「已有 remote 的名字」（origin），也可以直接传 URL。
+cd - >/dev/null
+REMOTE_URL="$(git remote get-url "$REMOTE" 2>/dev/null || echo "$REMOTE")"
+cd "$TMP"
+git remote add origin "$REMOTE_URL"
+git push --force origin "$BRANCH"
 
 cd - >/dev/null
 rm -rf "$TMP"

@@ -80,8 +80,22 @@ git push -u origin main
 ```
 
 **验证**：`git ls-remote --heads origin main` 能列出分支。
-**常见失败**：`Permission denied (publickey)` → SSH key 没加到 GitHub。
-先跑 `ssh -T git@github.com`，应该回 `Hi Ballballler!`。
+
+**常见失败**：`Permission denied (publickey)` —— 加到 GitHub 的那把 key 叫
+`id_ed25519_hotspot`，不是 Git 默认会尝试的 `id_rsa` / `id_ed25519`，所以必须告诉 SSH
+用哪把。在 `~/.ssh/config` 里写一段：
+
+```
+Host github.com
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_ed25519_hotspot
+    IdentitiesOnly yes
+```
+
+或者临时指定：`export GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519_hotspot"`。
+临时方式只对当前终端有效，而且 `deploy/pages.sh` 是在另一个临时目录里执行 push 的，
+只配 `core.sshCommand` 会失效 —— 长期用还是写 config 最省事。
 
 ### 3. 导出并推送静态产物
 
