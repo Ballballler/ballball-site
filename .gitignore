@@ -1,0 +1,33 @@
+# 虚拟环境
+.venv/
+venv/
+
+# 运行时数据（含口令散列，绝不入库）
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# 环境变量与密钥
+.env
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+
+# 后台上传的图片（和 data/ 同类，属于数据不是代码，用 deploy/backup.sh 备份）
+static/uploads/*
+
+# 本地备份产物（含数据库与站点截图，不进仓库）
+backup/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# 编辑器 / 系统
+.vscode/
+.DS_Store
+Thumbs.db

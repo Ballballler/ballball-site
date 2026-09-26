@@ -1,0 +1,483 @@
+/* ========================================================================
+   resume.css —— 简历页：3D 技能球、技能条、光路时间轴、打印样式
+   ===================================================================== */
+
+.resume-hero {
+  padding-bottom: clamp(24px, 4vw, 40px);
+}
+
+.resume-intro {
+  max-width: 62ch;
+  margin-top: 18px;
+  font-size: 1.04rem;
+  color: var(--ink-soft);
+  white-space: pre-wrap;
+}
+
+.resume-hero__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-top: 26px;
+}
+
+/* 技能区布局 .skill-layout 与 .kind-badge 定义在 pages.css，两页共用 */
+
+#sphere-host {
+  display: grid;
+  place-items: center;
+  padding: 26px;
+  min-height: 340px;
+}
+
+.sphere-hint {
+  margin: 14px 0 0;
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  color: var(--ink-mute);
+  text-align: center;
+}
+
+/* ---------------------------- 技能条 ---------------------------- */
+
+.skill-bars {
+  display: grid;
+  gap: 22px;
+}
+
+.skill-group__title {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--primary-deep);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.skill-group__title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(0, 184, 212, 0.5), transparent);
+}
+
+.skill-row {
+  display: grid;
+  grid-template-columns: minmax(96px, 150px) minmax(0, 1fr) 44px;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 11px;
+}
+
+.skill-row__name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.skill-row__val {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--ink-mute);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.skill-row__meter {
+  height: 9px;
+  border-radius: 999px;
+  background: rgba(11, 18, 32, 0.09);
+  overflow: hidden;
+  position: relative;
+}
+
+.skill-row__fill {
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--skill-color, #00b8d4),
+    color-mix(in srgb, var(--skill-color, #00b8d4) 45%, #7c5cff)
+  );
+  box-shadow: 0 0 12px -2px var(--skill-color, #00b8d4);
+  transition: width 1.1s var(--ease-out);
+}
+
+/* ---------------------------- 时间轴 ---------------------------- */
+
+.timeline {
+  position: relative;
+  padding-left: 30px;
+}
+
+/* 那条会发光的主干 */
+.timeline::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  border-radius: 2px;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 184, 212, 0.7),
+    rgba(124, 92, 255, 0.5),
+    rgba(255, 45, 120, 0.35)
+  );
+}
+
+.tl-item {
+  position: relative;
+  margin-bottom: 22px;
+}
+
+/* 节点 */
+.tl-item::before {
+  content: "";
+  position: absolute;
+  left: -30px;
+  top: 22px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--primary);
+  box-shadow: 0 0 0 5px rgba(0, 184, 212, 0.16);
+  transition: box-shadow var(--dur-base) ease, transform var(--dur-base) ease;
+  z-index: 1;
+}
+
+.tl-item:hover::before {
+  transform: scale(1.18);
+  box-shadow: 0 0 0 8px rgba(0, 184, 212, 0.22);
+}
+
+.tl-item--current::before {
+  border-color: var(--hot);
+  box-shadow: 0 0 0 5px rgba(255, 45, 120, 0.18);
+  animation: pulse-ring 2.6s ease-out infinite;
+}
+
+/* 横向连接线 */
+.tl-item::after {
+  content: "";
+  position: absolute;
+  left: -16px;
+  top: 30px;
+  width: 14px;
+  height: 1px;
+  background: rgba(0, 184, 212, 0.4);
+}
+
+.tl-card {
+  padding: 20px 22px;
+}
+
+.tl-card__top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.tl-card__title {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.tl-card__date {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--ink-mute);
+  white-space: nowrap;
+}
+
+.tl-card__org {
+  font-size: 0.86rem;
+  color: var(--primary-deep);
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.tl-card__org span {
+  color: var(--ink-mute);
+  font-weight: 500;
+}
+
+.tl-card__summary {
+  margin-top: 12px;
+  font-size: 0.94rem;
+  color: var(--ink-soft);
+}
+
+.tl-card__list {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 7px;
+}
+
+.tl-card__list li {
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  line-height: 1.65;
+}
+
+.tl-card__list li::marker {
+  color: var(--primary);
+}
+
+.tl-card__foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+/* ---------------------------- 成长路径 ---------------------------- */
+
+.journey {
+  position: relative;
+  display: grid;
+  gap: 18px;
+}
+
+/* 竖直的连接线：把每一步串起来，视觉上就是「一条走过来的路」 */
+.journey::before {
+  content: "";
+  position: absolute;
+  left: 27px;
+  top: 18px;
+  bottom: 18px;
+  width: 2px;
+  background: linear-gradient(
+    180deg,
+    var(--primary) 0%,
+    var(--accent) 45%,
+    rgba(100, 116, 139, 0.35) 100%
+  );
+  border-radius: 2px;
+}
+
+.journey__step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.journey__rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+.journey__dot {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: #fff;
+  background: var(--primary);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.85), var(--glass-shadow);
+  z-index: 1;
+}
+
+.journey__step--start .journey__dot {
+  background: var(--primary);
+}
+.journey__step--turn .journey__dot {
+  background: var(--hot);
+}
+.journey__step--now .journey__dot {
+  background: var(--mint);
+  color: var(--ink);
+}
+.journey__step--next .journey__dot {
+  background: transparent;
+  color: var(--ink-mute);
+  border: 2px dashed rgba(100, 116, 139, 0.55);
+}
+
+.journey__stage {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: var(--ink-mute);
+  white-space: nowrap;
+}
+
+.journey__body {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--glass-shadow);
+}
+
+.journey__title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.journey__when {
+  font-size: 0.8rem;
+  color: var(--ink-mute);
+  margin-bottom: 12px;
+}
+
+.journey__answers {
+  display: grid;
+  gap: 10px;
+}
+
+.journey__qa {
+  display: grid;
+  grid-template-columns: 84px 1fr;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.journey__label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--primary-deep);
+}
+
+.journey__text {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: var(--ink-soft);
+}
+
+.journey__evidence {
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(100, 116, 139, 0.28);
+  font-size: 0.82rem;
+  color: var(--ink-mute);
+}
+
+.section__note {
+  margin-top: 6px;
+  font-size: 0.82rem;
+  color: var(--ink-mute);
+}
+
+@media (max-width: 620px) {
+  .journey::before {
+    left: 19px;
+  }
+  .journey__step {
+    grid-template-columns: 40px 1fr;
+    gap: 12px;
+  }
+  .journey__dot {
+    width: 30px;
+    height: 30px;
+    font-size: 0.82rem;
+  }
+  .journey__qa {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}
+
+/* ---------------------------- 打印：变成一张正式简历 ---------------------------- */
+
+@media print {
+  .aurora,
+  .nav,
+  .progress,
+  .footer,
+  #btn-print,
+  .sphere-hint,
+  #sphere-host,
+  .filters {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
+    color: #111;
+  }
+
+  .shell {
+    width: 100%;
+  }
+
+  .section {
+    padding: 12px 0;
+    break-inside: avoid;
+  }
+
+  .glass,
+  .tl-card {
+    background: #fff !important;
+    border: 1px solid #d8dee9 !important;
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .skill-layout {
+    display: block;
+  }
+
+  .timeline {
+    padding-left: 20px;
+  }
+
+  .tl-item::before {
+    left: -20px;
+  }
+
+  .tl-item::after {
+    display: none;
+  }
+
+  h1 {
+    font-size: 30px;
+  }
+
+  h2 {
+    font-size: 19px;
+    margin-bottom: 10px;
+  }
+
+  .tl-item {
+    break-inside: avoid;
+  }
+
+  @page {
+    margin: 16mm;
+  }
+}

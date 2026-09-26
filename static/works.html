@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>音乐构思 · Ballball 的主页</title>
+    <meta
+      name="description"
+      content="Ballball 正在构思的音乐作品：动机、BPM、调性、创作笔记。完成的可以直接在线听、可以下载。"
+    />
+    <meta name="theme-color" content="#070b12" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Ballball 的主页" />
+    <meta property="og:title" content="音乐构思 · Ballball 的主页" />
+    <meta property="og:description" content="一些还没做完的音乐。先记录，再让它们慢慢成形。" />
+    <meta property="og:url" content="/works.html" />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="stylesheet" href="css/fonts.css" />
+    <link rel="stylesheet" href="css/orbit.css" />
+  </head>
+  <body>
+    <a class="skip" href="#music">跳到正文</a>
+
+    <header class="topbar">
+      <div class="header-inner shell">
+        <a class="brand" href="index.html" aria-label="Ballball 首页">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span><strong>BALLBALL</strong><small>一个人的灵感星系</small></span>
+        </a>
+        <nav class="main-nav" aria-label="主导航">
+          <a href="index.html">首页</a>
+          <a href="resume.html">简历</a>
+          <a href="movies.html">恐怖电影</a>
+          <a href="works.html" class="is-active">音乐构思</a>
+        </nav>
+        <div class="header-actions">
+          <a class="admin-link" href="admin.html">管理后台 ↗</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="shell">
+      <section class="section" id="music" style="border-top: 0; padding-top: 40px">
+        <div class="section-heading reveal">
+          <div>
+            <div class="eyebrow"><span class="section-number">01</span>SOUNDS, BEFORE THEY BECOME SONGS</div>
+            <h2>把想象，写进声音。</h2>
+          </div>
+          <p>先记录，再让它们慢慢成形。完成的可以直接在线听、可以下载。</p>
+        </div>
+
+        <!-- 主视觉：一张会转的大唱片 + 状态统计 -->
+        <div class="music-hero reveal">
+          <div class="music-hero__disc" id="work-hero">
+            <div class="record record--hero">
+              <div class="record-label">BALLBALL<br />SIDE A</div>
+            </div>
+            <div class="music-hero__tone"></div>
+          </div>
+          <div class="music-hero__side">
+            <div class="glass music-hero__stats" id="work-stats"></div>
+            <p class="section-note">唱片为原创 CSS 视觉；有音频的作品会在卡片与详情里提供真实播放。</p>
+          </div>
+        </div>
+
+        <div class="filter-row" id="work-filters"></div>
+        <div class="filter-row tag-filters" id="work-tag-filters"></div>
+        <div class="music-grid" id="work-grid"></div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="shell">
+        <div class="footer-top">
+          <div>
+            <div class="eyebrow" style="margin-bottom: 14px">AN IDEA, NOT A TRACK</div>
+            <h2>一首曲子从动机开始。</h2>
+            <p>构思、小样、成品 —— 每一步都留在这里。</p>
+          </div>
+          <a class="button" href="index.html">回到首页 ↑</a>
+        </div>
+        <div class="footer-meta">
+          <span>BALLBALL · 音乐构思<br />动机 / BPM / 调性 / 创作笔记</span>
+          <span>唱片为手绘 CSS，音频为本人上传<br />© Ballball</span>
+        </div>
+      </div>
+    </footer>
+
+    <!-- 详情弹层：由 common.js 以原生 <dialog> 动态创建 -->
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+    <script src="js/common.js"></script>
+    <script src="js/works.js"></script>
+  </body>
+</html>

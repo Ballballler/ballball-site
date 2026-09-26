@@ -1,0 +1,38 @@
+[Unit]
+Description=Ballball homepage (FastAPI)
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ballball
+Group=ballball
+
+WorkingDirectory=/srv/ballball
+EnvironmentFile=/srv/ballball/.env
+
+# 单进程足够一个小站；多进程会让内存里的评论限流各算一份
+ExecStart=/srv/ballball/.venv/bin/uvicorn app.main:app \
+    --host 127.0.0.1 \
+    --port 8800 \
+    --workers 1 \
+    --proxy-headers \
+    --forwarded-allow-ips 127.0.0.1
+
+Restart=always
+RestartSec=3
+TimeoutStopSec=15
+KillSignal=SIGTERM
+
+# 安全加固
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/ballball/data
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

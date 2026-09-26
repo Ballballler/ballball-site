@@ -1,0 +1,510 @@
+/* ========================================================================
+   base.css —— 设计令牌 / 全局重置 / 背景氛围 / 通用动画
+   方向：Retro-futuristic × 液态玻璃 —— 「全息玻璃 Holographic Glass」
+   展示字 Chakra Petch（未来感）+ 等宽 JetBrains Mono（HUD 标签）
+   底色明亮积极，未来感靠网格地平线、扫描线、噪点与霓虹描边堆出来
+   ===================================================================== */
+
+:root {
+  /* ---------- 文字 ---------- */
+  --ink: #0b1220;
+  --ink-soft: #3f4a63;
+  --ink-mute: #64748b;
+
+  /* ---------- 主题色：电光青主导 + 紫罗兰辅助 + 单一强调 ---------- */
+  --primary: #00b8d4;
+  --primary-deep: #0891b2;
+  --accent: #7c5cff;
+  --hot: #ff2d78;
+  --mint: #00e5b0;
+  --amber: #f59e0b;
+
+  /* ---------- 玻璃 ---------- */
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-bg-strong: rgba(255, 255, 255, 0.74);
+  --glass-bg-soft: rgba(255, 255, 255, 0.34);
+  --glass-border: rgba(255, 255, 255, 0.75);
+  --glass-inner: rgba(255, 255, 255, 0.9);
+  --glass-blur: 22px;
+  --glass-shadow: 0 18px 50px -18px rgba(11, 18, 32, 0.28);
+  --glass-shadow-hover: 0 30px 70px -22px rgba(11, 18, 32, 0.38);
+
+  /* ---------- 霓虹 ---------- */
+  --neon: 0 0 0 1px rgba(0, 184, 212, 0.35), 0 0 22px -4px rgba(0, 184, 212, 0.55);
+  --neon-violet: 0 0 0 1px rgba(124, 92, 255, 0.35),
+    0 0 22px -4px rgba(124, 92, 255, 0.5);
+
+  /* ---------- 尺寸 ---------- */
+  --radius-lg: 26px;
+  --radius: 18px;
+  --radius-sm: 12px;
+  --shell: 1200px;
+  --gap: 20px;
+
+  /* ---------- 字体 ---------- */
+  --font-display: "Chakra Petch", "PingFang SC", "HarmonyOS Sans SC",
+    "Microsoft YaHei", sans-serif;
+  --font-sans: "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei",
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, Menlo, monospace;
+
+  /* ---------- 动效 ---------- */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 160ms;
+  --dur-base: 320ms;
+  --dur-slow: 640ms;
+
+  /* 鼠标光晕坐标，由 JS 写入 */
+  --mx: 50%;
+  --my: 50%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  font-family: var(--font-sans);
+  color: var(--ink);
+  background: #eaf4fb;
+  line-height: 1.75;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================ 背景氛围层 ============================ */
+
+.aurora {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  overflow: hidden;
+  background: linear-gradient(165deg, #e6f6ff 0%, #f2f0ff 48%, #fff1f7 100%);
+}
+
+.aurora__blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.72;
+  will-change: transform;
+}
+
+.aurora__blob--1 {
+  width: 46vw;
+  height: 46vw;
+  top: -12vw;
+  left: -8vw;
+  background: radial-gradient(circle at 30% 30%, #67e8f9, transparent 70%);
+  animation: drift-a 26s ease-in-out infinite alternate;
+}
+
+.aurora__blob--2 {
+  width: 40vw;
+  height: 40vw;
+  top: 12vh;
+  right: -10vw;
+  background: radial-gradient(circle at 60% 40%, #c4b5fd, transparent 70%);
+  animation: drift-b 32s ease-in-out infinite alternate;
+}
+
+.aurora__blob--3 {
+  width: 38vw;
+  height: 38vw;
+  bottom: -14vw;
+  left: 18vw;
+  background: radial-gradient(circle at 50% 50%, #fbcfe8, transparent 70%);
+  animation: drift-c 29s ease-in-out infinite alternate;
+}
+
+.aurora__blob--4 {
+  width: 32vw;
+  height: 32vw;
+  bottom: 4vh;
+  right: 6vw;
+  background: radial-gradient(circle at 40% 60%, #fde68a, transparent 70%);
+  animation: drift-a 35s ease-in-out infinite alternate-reverse;
+}
+
+/* 透视网格地平线 —— 未来感的关键一笔 */
+.aurora__grid {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 62vh;
+  background-image: linear-gradient(rgba(0, 184, 212, 0.22) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 184, 212, 0.22) 1px, transparent 1px);
+  background-size: 64px 64px;
+  transform: perspective(420px) rotateX(66deg);
+  transform-origin: bottom center;
+  -webkit-mask-image: linear-gradient(transparent 0%, #000 55%, #000 100%);
+  mask-image: linear-gradient(transparent 0%, #000 55%, #000 100%);
+  animation: grid-flow 9s linear infinite;
+  opacity: 0.85;
+}
+
+@keyframes grid-flow {
+  to {
+    background-position: 0 64px, 0 0;
+  }
+}
+
+/* CRT 扫描线 */
+.aurora__scan {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.55) 0 1px,
+    transparent 1px 4px
+  );
+  opacity: 0.16;
+  mix-blend-mode: overlay;
+  animation: scan-move 7s linear infinite;
+}
+
+@keyframes scan-move {
+  to {
+    transform: translateY(4px);
+  }
+}
+
+/* 噪点颗粒 */
+.aurora__grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.055;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@keyframes drift-a {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(8vw, 6vh, 0) scale(1.18);
+  }
+}
+
+@keyframes drift-b {
+  from {
+    transform: translate3d(0, 0, 0) scale(1.1);
+  }
+  to {
+    transform: translate3d(-9vw, 9vh, 0) scale(0.92);
+  }
+}
+
+@keyframes drift-c {
+  from {
+    transform: translate3d(0, 0, 0) scale(0.95);
+  }
+  to {
+    transform: translate3d(10vw, -7vh, 0) scale(1.22);
+  }
+}
+
+/* ============================ 排版 ============================ */
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  line-height: 1.16;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  font-family: var(--font-display);
+}
+
+h1 {
+  font-size: clamp(2.5rem, 6.4vw, 4.6rem);
+}
+
+h2 {
+  font-size: clamp(1.7rem, 3.4vw, 2.6rem);
+}
+
+h3 {
+  font-size: 1.14rem;
+}
+
+p {
+  margin: 0 0 0.9em;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* 渐变文字 */
+.grad-text {
+  background: linear-gradient(100deg, #0891b2, #7c5cff 48%, #ff2d78);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* HUD 风格小标签：等宽 + 字距 */
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+/* ============================ 未来感装饰件 ============================ */
+
+/* 四角括号 */
+.hud {
+  position: relative;
+}
+
+.hud::before,
+.hud::after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 1px solid rgba(0, 184, 212, 0.55);
+  pointer-events: none;
+  transition: border-color var(--dur-base) var(--ease-out);
+}
+
+.hud::before {
+  top: 10px;
+  left: 10px;
+  border-right: none;
+  border-bottom: none;
+}
+
+.hud::after {
+  bottom: 10px;
+  right: 10px;
+  border-left: none;
+  border-top: none;
+}
+
+.hud:hover::before,
+.hud:hover::after {
+  border-color: var(--hot);
+}
+
+/* 霓虹描边 */
+.neon {
+  box-shadow: var(--neon);
+}
+
+/* 旋转渐变描边（用 mask 做出「只有边框有渐变」的效果） */
+.ring-glow {
+  position: relative;
+}
+
+.ring-glow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from 0deg,
+    transparent,
+    #00b8d4,
+    #7c5cff,
+    #ff2d78,
+    transparent 70%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity var(--dur-base) ease;
+  pointer-events: none;
+}
+
+.ring-glow:hover::before {
+  opacity: 1;
+  animation: ring-spin 3.2s linear infinite;
+}
+
+@keyframes ring-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+/* 跑马灯 */
+.marquee {
+  overflow: hidden;
+  position: relative;
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 8%,
+    #000 92%,
+    transparent
+  );
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+
+.marquee__track {
+  display: inline-flex;
+  gap: 34px;
+  white-space: nowrap;
+  animation: marquee 26s linear infinite;
+}
+
+.marquee:hover .marquee__track {
+  animation-play-state: paused;
+}
+
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* ============================ 通用动画 ============================ */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(26px);
+  transition: opacity var(--dur-slow) var(--ease-out),
+    transform var(--dur-slow) var(--ease-out);
+}
+
+.reveal.in-view {
+  opacity: 1;
+  transform: none;
+}
+
+@keyframes float-y {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.float {
+  animation: float-y 6s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 184, 212, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 16px rgba(0, 184, 212, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 184, 212, 0);
+  }
+}
+
+/* ============================ 布局 ============================ */
+
+.shell {
+  width: min(var(--shell), calc(100% - 40px));
+  margin-inline: auto;
+}
+
+.section {
+  padding: clamp(48px, 8vw, 96px) 0;
+}
+
+.section__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 32px;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--primary-deep);
+  margin-bottom: 12px;
+}
+
+.eyebrow::before {
+  content: "";
+  width: 24px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+}
+
+.muted {
+  color: var(--ink-mute);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary-deep);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
+/* ============================ 无障碍降级 ============================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+
+  .aurora__grid,
+  .aurora__scan {
+    animation: none;
+  }
+}

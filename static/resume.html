@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>简历 · Ballball 的主页</title>
+    <meta
+      name="description"
+      content="Ballball 的简历：一步步走过来的成长路径，教育与经历，技能三维分布。可打印为 PDF。"
+    />
+    <meta name="theme-color" content="#070b12" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Ballball 的主页" />
+    <meta property="og:title" content="简历 · Ballball 的主页" />
+    <meta property="og:description" content="我走过的，和正在走的。" />
+    <meta property="og:url" content="/resume.html" />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="stylesheet" href="css/fonts.css" />
+    <link rel="stylesheet" href="css/orbit.css" />
+  </head>
+  <body>
+    <a class="skip" href="#journey">跳到正文</a>
+
+    <header class="topbar">
+      <div class="header-inner shell">
+        <a class="brand" href="index.html" aria-label="Ballball 首页">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span><strong>BALLBALL</strong><small>一个人的灵感星系</small></span>
+        </a>
+        <nav class="main-nav" aria-label="主导航">
+          <a href="index.html">首页</a>
+          <a href="resume.html" class="is-active">简历</a>
+          <a href="movies.html">恐怖电影</a>
+          <a href="works.html">音乐构思</a>
+        </nav>
+        <div class="header-actions">
+          <a class="admin-link" href="admin.html">管理后台 ↗</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="shell">
+      <!-- ==================== 开场：自我介绍 + 3D 技能球 ==================== -->
+      <section class="hero resume-hero" id="resume-hero" aria-labelledby="resume-name">
+        <div class="hero-copy">
+          <div class="eyebrow"><span class="dot"></span>RESUME / A PATH IN PROGRESS</div>
+          <h1 id="resume-name">Ballball</h1>
+          <p class="hero__tagline" id="resume-headline"></p>
+          <p class="hero-copy-p" id="resume-intro"></p>
+          <div class="chips resume-contacts" id="resume-contacts" style="margin-top: 20px"></div>
+          <div class="hero-actions no-print">
+            <button class="button primary" type="button" id="btn-print">打印 / 存为 PDF ↗</button>
+            <a class="button" href="index.html">回到首页 ↑</a>
+          </div>
+          <div class="hero-foot"><i></i><span>GROWTH / SKILLS / EXPERIENCE</span></div>
+        </div>
+
+        <div class="stage resume-stage">
+          <div class="stage-caption">FIG. 01 — SKILLS IN ORBIT</div>
+          <div class="orbit" aria-hidden="true"></div>
+          <div class="orbit second" aria-hidden="true"></div>
+          <div id="skill-sphere" class="reveal"></div>
+        </div>
+      </section>
+
+      <!-- ==================== 成长路径（阶梯状） ==================== -->
+      <section class="section" id="journey">
+        <div class="shell">
+          <div class="section-heading reveal">
+            <div>
+              <div class="eyebrow"><span class="section-number">01</span>A PATH IN PROGRESS</div>
+              <h2>一步步往前走。</h2>
+            </div>
+            <p>把真实的步子留在这里。每一级只记三件事：卡在哪、怎么走、得到什么。</p>
+          </div>
+          <div class="journey" id="journey-path"></div>
+        </div>
+      </section>
+
+      <!-- ==================== 技能 ==================== -->
+      <section class="section" id="skills">
+        <div class="shell">
+          <div class="section-heading reveal">
+            <div>
+              <div class="eyebrow"><span class="section-number">02</span>CAPABILITIES</div>
+              <h2>技能的三维分布。</h2>
+            </div>
+            <p>上面的球是三维的，可以拖。下面是分组的熟练度。</p>
+          </div>
+          <div class="skill-bars" id="skill-bars"></div>
+        </div>
+      </section>
+
+      <!-- ==================== 教育与经历（佐证） ==================== -->
+      <section class="section" id="timeline">
+        <div class="shell">
+          <div class="section-heading reveal">
+            <div>
+              <div class="eyebrow"><span class="section-number">03</span>TIMELINE</div>
+              <h2>教育与经历。</h2>
+              <p class="section-note">这一节只是佐证。真正想讲的，是上面那几步是怎么走过来的。</p>
+            </div>
+            <div class="filters no-print" id="resume-filters"></div>
+          </div>
+          <div class="timeline" id="resume-timeline"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="shell">
+        <div class="footer-top">
+          <div>
+            <div class="eyebrow" style="margin-bottom: 14px">STILL BECOMING</div>
+            <h2>还在长。</h2>
+            <p>这一页会持续更新。下一个阶段，正在路上。</p>
+          </div>
+          <a class="button" href="index.html">回到首页 ↑</a>
+        </div>
+        <div class="footer-meta">
+          <span>BALLBALL · 简历<br />成长路径 / 技能 / 教育与经历</span>
+          <span>打印仅保留正文区块<br />© Ballball</span>
+        </div>
+      </div>
+    </footer>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+    <script src="js/sphere.js"></script>
+    <script src="js/common.js"></script>
+    <script src="js/resume.js"></script>
+  </body>
+</html>

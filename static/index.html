@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Ballball 的主页 · 自我介绍 / 简历 / 恐怖电影 / 音乐构思</title>
+    <meta
+      name="description"
+      content="Ballball 的个人主页：以自我介绍开场，含简历与技能三维分布、恐怖电影评价档案、以及正在构思的音乐作品。"
+    />
+    <meta name="theme-color" content="#070b12" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Ballball 的主页" />
+    <meta property="og:title" content="Ballball 的主页" />
+    <meta property="og:description" content="在恐怖片里找灵感，在音乐里找节奏，在代码里把它们落地。" />
+    <meta property="og:url" content="/" />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="stylesheet" href="css/fonts.css" />
+    <link rel="stylesheet" href="css/orbit.css" />
+  </head>
+  <body>
+    <a class="skip" href="#sections">跳到正文</a>
+
+    <header class="topbar">
+      <div class="header-inner shell">
+        <a class="brand" href="index.html" aria-label="Ballball 首页">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span><strong>BALLBALL</strong><small>一个人的灵感星系</small></span>
+        </a>
+        <nav class="main-nav" aria-label="主导航">
+          <a href="index.html" class="is-active">首页</a>
+          <a href="resume.html">简历</a>
+          <a href="movies.html">恐怖电影</a>
+          <a href="works.html">音乐构思</a>
+        </nav>
+        <div class="header-actions">
+          <button id="motion-toggle" class="motion-button" type="button" aria-pressed="false">暂停动画</button>
+          <a class="admin-link" href="admin.html">管理后台 ↗</a>
+        </div>
+      </div>
+    </header>
+
+    <main id="home" class="shell" tabindex="-1">
+      <!-- ==================== 开场：自我介绍 + 3D 环绕 ==================== -->
+      <section class="hero" aria-labelledby="hero-heading">
+        <div class="hero-copy">
+          <div class="eyebrow"><span class="dot"></span>A SMALL UNIVERSE, STILL IN MOTION</div>
+          <h1 id="hero-heading">你好，我是<br /><span id="profile-name">Ballball</span></h1>
+          <p id="profile-intro">在恐怖片里找灵感，在音乐里找节奏。</p>
+          <div class="hero-actions">
+            <a class="button primary" href="movies.html">看恐怖电影 <span aria-hidden="true">↗</span></a>
+            <a class="button" href="#sections">先认识一下 <span aria-hidden="true">↓</span></a>
+          </div>
+          <div class="hero-foot"><i></i><span>MUSIC / CINEMA / LITTLE THOUGHTS</span></div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-caption">FIG. 01 — AN OPEN MIND</div>
+          <div class="orbit" aria-hidden="true"></div>
+          <div class="orbit second" aria-hidden="true"></div>
+          <canvas
+            class="scene-canvas"
+            id="scene"
+            width="760"
+            height="620"
+            tabindex="0"
+            data-wallpaper="img/fold-wallpaper.jpg"
+            aria-label="可交互的三维环绕场景。拖动或方向键旋转。"
+          ></canvas>
+          <div class="float-label a" aria-hidden="true">
+            <small>ALWAYS CURIOUS</small><span>保持好奇，慢慢生长</span>
+          </div>
+          <div class="float-label b" aria-hidden="true">
+            <small>IDEAS IN ORBIT</small><span>音乐 · 电影 · 我</span>
+          </div>
+          <div class="float-label c" aria-hidden="true">✳</div>
+          <p id="scene-error" class="scene-error" role="status" hidden></p>
+          <div class="scene-controls">
+            <label for="fold">环绕 <input id="fold" type="range" min="0" max="180" step="1" value="155" /></label>
+            <output id="fold-output" for="fold">155°</output>
+            <button id="auto-fold" type="button" aria-pressed="true">自动</button>
+            <button id="reset-scene" type="button">重置</button>
+          </div>
+          <div class="scene-hint">拖动 / 方向键旋转 · Home 重置 · 滑杆调整</div>
+        </div>
+      </section>
+
+      <!-- 下面的板块由 home.js 按数据填充：关于我 / 精选电影 / 精选音乐 -->
+      <div id="sections"></div>
+    </main>
+
+    <footer class="footer">
+      <div class="shell">
+        <div class="footer-top">
+          <div>
+            <div class="eyebrow" style="margin-bottom: 14px">LEAVE A LITTLE ROOM FOR WONDER</div>
+            <h2>下一个灵感，正在路上。</h2>
+            <p id="contact-text"></p>
+          </div>
+          <a class="button" href="#home">回到起点 ↑</a>
+        </div>
+        <div class="footer-meta">
+          <span>BALLBALL · 个人主页<br />自我介绍 / 简历 / 恐怖电影 / 音乐构思</span>
+          <span>三维场景为程序化生成，仅请求一张本地壁纸<br />© Ballball</span>
+        </div>
+        <p class="footer__credit">
+          电影资料与海报来自
+          <a href="https://www.themoviedb.org/" target="_blank" rel="noopener">TMDB</a>。
+          This product uses the TMDB API but is not endorsed or certified by TMDB.
+        </p>
+      </div>
+    </footer>
+
+    <!-- 详情弹层：由 common.js 以原生 <dialog> 动态创建 -->
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+    <script>window.CreativeI18n={errors:{webglUnsupported:"当前浏览器不支持 WebGL 2，请使用开启硬件加速的现代浏览器。",canvasUnavailable:"无法使用画布。",contextUnavailable:"图形上下文暂不可用，请刷新重试。",invalidScene:"三维场景暂不可用。"}};</script>
+    <script src="vendor/three.min.js"></script>
+    <script src="vendor/creative-runtime.js"></script>
+    <script src="vendor/creative-scenes.js"></script>
+    <script src="js/common.js"></script>
+    <script src="js/home.js"></script>
+  </body>
+</html>
