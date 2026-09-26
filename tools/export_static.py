@@ -228,9 +228,11 @@ def main() -> None:
     dist.mkdir(parents=True)
 
     print(f"导出目标：{dist}")
-    client = TestClient(app)
-
-    snap = build_snapshot(client)
+    # 必须用 with：`TestClient(app)` 单独用不会触发 FastAPI 的 lifespan startup，
+    # 而建表和灌种子数据都在那里面。不进 with 的话，换一台没有 site.db 的机器
+    # 就会报 no such table: profile —— CI 上第一次暴露了这个 bug。
+    with TestClient(app) as client:
+        snap = build_snapshot(client)
     print(
         f"  数据快照：{len(snap)} 个键，"
         f"电影 {len(snap.get('/api/movies') or [])} 部 / "

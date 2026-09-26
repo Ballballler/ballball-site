@@ -321,7 +321,9 @@ PROFILE = dict(
 )
 
 
-SKILLS = [
+# 别叫 SKILLS —— 上面第 37 行那个 SKILLS 是「技能分类」（3 元组：名字/颜色/说明）。
+# 这是技能项本身（5 元组），两者不是一回事，同名会让分类那处解包失败。
+SKILL_ITEMS = [
     ("Python", 85, "语言与框架", "#22d3ee", "后端与自动化脚本的主力语言"),
     ("FastAPI", 78, "语言与框架", "#38bdf8", "这个站点的后端就是它"),
     ("SQLAlchemy", 70, "语言与框架", "#38bdf8", "ORM 与数据建模"),
@@ -543,7 +545,7 @@ def _seed_journey(db) -> None:
 def _seed_resume_and_skills(db) -> None:
     """简历与技能单独判断，旧库升级时也能补上这两块。"""
     if db.query(SkillItem).count() == 0:
-        for idx, (name, level, group, color, note) in enumerate(SKILLS):
+        for idx, (name, level, group, color, note) in enumerate(SKILL_ITEMS):
             db.add(
                 SkillItem(
                     name=name,
