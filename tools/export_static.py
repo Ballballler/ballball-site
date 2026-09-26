@@ -38,7 +38,8 @@ from fastapi.testclient import TestClient  # noqa: E402
 from app import assets  # noqa: E402
 from app.main import app  # noqa: E402
 
-# 需要导出的公开页面。admin.html 刻意不在列表里。
+# 需要导出的公开页面。刻意不含 admin.html —— 那儿的真后台需要 Python，
+# 换成一张说明页（见 _write_admin_notice），免得访客对着 404 发懵。
 PAGES = ["index.html", "movies.html", "works.html", "resume.html"]
 
 # 前台会请求的 GET 接口（见 static/js 里的 API.get 调用清单）
@@ -142,6 +143,8 @@ def render_pages(dist: Path, snap: dict, site_url: str) -> list[str]:
 
     # 404 页：Pages 上访问不存在的路径会用到
     _write_404(dist, site_url)
+    # 后台地址的说明页（不是真后台）
+    _write_admin_notice(dist, site_url)
     return written
 
 
@@ -174,6 +177,80 @@ def _write_404(dist: Path, site_url: str) -> None:
 </html>
 """
     (dist / "404.html").write_text(html, encoding="utf-8")
+
+
+def _write_admin_notice(dist: Path, site_url: str) -> None:
+    """给 /admin.html 放一张说明页。
+
+    真后台跑不了：它要靠 Python 校验口令、读写 SQLite，Pages 一样都提供不了。
+    与其推一个「输什么口令都报错」的登录框（看着像能用其实是死的），
+    不如明明白白告诉你后台在哪、内容怎么更新。
+    """
+    html = f"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>后台不在这里 · Ballball 的主页</title>
+<link rel="stylesheet" href="css/orbit.css">
+<style>
+  body {{ min-height: 100dvh; display: grid; place-items: center; padding: 24px; }}
+  .admin-note {{ width: min(560px, 100%); }}
+  .admin-note h1 {{ font-size: 26px; margin: 0 0 12px; }}
+  .admin-note p {{ color: var(--muted, #8b95a5); line-height: 1.9; margin: 0 0 14px; }}
+  .admin-note code {{
+    font-family: var(--mono, monospace); font-size: 13px;
+    background: #ffffff0d; padding: 2px 6px; border-radius: 6px;
+  }}
+  .admin-steps {{ margin: 20px 0 0; padding: 0; list-style: none; counter-reset: s; }}
+  .admin-steps li {{
+    counter-increment: s; position: relative; padding-left: 30px; margin-bottom: 12px;
+    color: var(--ink-soft, #c3cad6); font-size: 14px; line-height: 1.8;
+  }}
+  .admin-steps li::before {{
+    content: counter(s); position: absolute; left: 0; top: 3px;
+    width: 20px; height: 20px; border-radius: 50%; background: #8fb8a826; color: #8fb8a8;
+    font: 11px/20px var(--mono, monospace); text-align: center;
+  }}
+  .admin-note__links {{ display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap; }}
+</style>
+</head>
+<body>
+<main class="shell admin-note">
+  <h1>后台管理不在这个网址上</h1>
+  <p>
+    你现在打开的是发在 GitHub Pages 上的<strong>静态展示版</strong>。Pages 只分发静态文件，
+    不会运行 Python，也没有数据库 —— 而后台要靠后端校验口令、读写数据库，
+    所以这块在这里用不了，登录框和上传功能都不会出现。
+  </p>
+  <p>
+    真正的后台一直在你自己的电脑上。改内容、发评论审核、传图片都在那儿做，
+    做完重新导出一次，这个网址就更新了。
+  </p>
+
+  <ol class="admin-steps">
+    <li>在项目目录里跑 <code>start.bat</code>（或 <code>python run.py --port 8800</code>）</li>
+    <li>浏览器打开 <code>http://127.0.0.1:8800/admin.html</code>，用你设的口令登录</li>
+    <li>改完内容跑 <code>deploy\\pages.bat</code>（macOS / Linux 是 <code>./deploy/pages.sh</code>）</li>
+    <li>一两分钟后这个网址就同步好了</li>
+  </ol>
+
+  <p style="margin-top:22px">
+    想要一个<strong>公网也能直接管理</strong>的后台，得有一台自己的服务器跑完整版
+    （systemd + nginx + HTTPS），见项目里的 <code>deploy/README.md</code>。
+  </p>
+
+  <div class="admin-note__links">
+    <a class="btn btn--primary" href="{site_url}/">回到首页</a>
+    <a class="btn" href="{site_url}/movies.html">恐怖电影</a>
+    <a class="btn" href="{site_url}/works.html">音乐构思</a>
+  </div>
+</main>
+</body>
+</html>
+"""
+    (dist / "admin.html").write_text(html, encoding="utf-8")
 
 
 def copy_assets(dist: Path) -> int:

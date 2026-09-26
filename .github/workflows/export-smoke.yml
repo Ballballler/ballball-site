@@ -38,8 +38,13 @@ jobs:
           for f in index.html movies.html works.html resume.html; do
             grep -q "__SITE_DATA__" "dist/$f" || { echo "$f 没有内联数据"; exit 1; }
           done
-          # 后台不该出现在静态产物里
-          test ! -f dist/admin.html || { echo "admin.html 不该被导出"; exit 1; }
+          # 后台不该被当成真后台导出：这里只允许放说明页，且不能被搜索引擎收录
+          test -f dist/admin.html || { echo "缺少 admin.html 说明页"; exit 1; }
+          grep -q "noindex" dist/admin.html || { echo "admin.html 缺 noindex"; exit 1; }
+          # 别写成 `grep -q password && exit 1`：set -e 下没匹配到也会让整步失败
+          if grep -qi "type=\"password\"" dist/admin.html; then
+            echo "admin.html 不该出现真正能填的口令输入框"; exit 1
+          fi
           echo "产物校验通过：$(find dist -type f | wc -l) 个文件"
 
       - name: 上传产物（便于排查）
