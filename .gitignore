@@ -15,6 +15,9 @@ data/
 id_rsa*
 id_ed25519*
 
+# 静态导出产物（tools/export_static.py 生成，推 gh-pages 分支用的）
+dist/
+
 # 后台上传的图片（和 data/ 同类，属于数据不是代码，用 deploy/backup.sh 备份）
 static/uploads/*
 

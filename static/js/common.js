@@ -2,7 +2,101 @@
    common.js —— 全站公共逻辑
    请求封装 / 提示 / 入场动画 / 鼠标光晕 / 滚动进度 / 评论区组件
    安全约定：所有用户输入一律用 textContent 渲染，绝不使用 innerHTML 拼接
+
+   两种运行模式：
+     1. 动态模式（本地 / 自己的服务器）：一切走 /api/*，后台、登录、写评论都在；
+     2. 静态模式（GitHub Pages）：tools/export_static.py 把数据库内容内联成
+        window.__SITE_DATA__，只读部分照样渲染，写操作优雅降级。
    ===================================================================== */
+
+/** 静态导出的数据快照。本地跑 FastAPI 时是 null，页面照旧走网络请求。 */
+function staticSnapshot() {
+  return (typeof window !== "undefined" && window.__SITE_DATA__) || null;
+}
+
+/** 静态站点上没有后端，写入类操作一律提前挡掉。 */
+function isStaticMode() {
+  return Boolean(staticSnapshot());
+}
+
+const STATIC_READONLY_MSG = "这是 GitHub Pages 上的只读版本，登录与写操作只在自己的服务器上可用";
+
+/* --------------------- 静态站（GitHub Pages）评论区 --------------------- */
+
+/**
+ * 静态站点上评论区没有后端，用 Giscus 顶上：它把评论存在 GitHub Discussions 里，
+ * 访客用 GitHub 账号发言，不需要我们自己的服务器。
+ *
+ * 需要仓库开启 Discussions，配置由 tools/export_static.py 从环境变量注入到
+ * window.__GISCUS__。没配置就退化成一句说明 + 去 Discussions 的链接。
+ */
+function mountGiscus(container, term) {
+  const cfg = (typeof window !== "undefined" && window.__GISCUS__) || null;
+  if (!cfg || !cfg.repo) return false;
+  if (container.dataset.giscusLoaded) return true;
+  container.dataset.giscusLoaded = "1";
+
+  // 这里必须用原生 createElement：el() 助手出于防 XSS 关掉了任意属性设置，
+  // 而 Giscus 全靠 data-* 属性传配置。
+  const script = document.createElement("script");
+  script.src = "https://giscus.app/client.js";
+  script.async = true;
+  script.crossOrigin = "anonymous";
+  const attrs = {
+    "data-repo": cfg.repo,
+    "data-repo-id": cfg.repoId || "",
+    "data-category": cfg.category || "Announcements",
+    "data-category-id": cfg.categoryId || "",
+    "data-mapping": "specific",
+    "data-term": term,
+    "data-strict": "0",
+    "data-reactions-enabled": "1",
+    "data-emit-metadata": "0",
+    "data-input-position": "top",
+    "data-theme": cfg.theme || "transparent_dark",
+    "data-lang": "zh-CN",
+    "data-loading": "lazy",
+  };
+  Object.keys(attrs).forEach((k) => script.setAttribute(k, attrs[k]));
+  container.appendChild(script);
+  return true;
+}
+
+function staticCommentSlot(targetType, targetId) {
+  const holder = el("div", { class: "comment-static" });
+  const term = `${targetType}-${targetId}`;
+
+  if (!mountGiscus(holder, term)) {
+    holder.appendChild(
+      el("p", {
+        class: "empty",
+        text: "这是静态导出的只读版本，评论未接入。想留言可以去 GitHub Discussions。",
+      })
+    );
+  }
+  return holder;
+}
+
+/**
+ * 在快照里找 GET 路径。
+ * 评论是按 target_type + target_id 过滤的，快照里存全量，这里现场筛。
+ */
+function staticLookup(path) {
+  const snap = staticSnapshot();
+  if (!snap) return undefined;
+  if (Object.prototype.hasOwnProperty.call(snap, path)) return snap[path];
+
+  if (path.startsWith("/api/comments?")) {
+    const q = new URLSearchParams(path.slice(path.indexOf("?") + 1));
+    const targetType = q.get("target_type");
+    const targetId = Number(q.get("target_id"));
+    const all = snap["/api/comments"] || [];
+    return all.filter(
+      (c) => c.target_type === targetType && Number(c.target_id) === targetId
+    );
+  }
+  return undefined;
+}
 
 const API = {
   async request(method, path, body) {
@@ -29,11 +123,33 @@ const API = {
     }
     return data;
   },
-  get: (p) => API.request("GET", p),
-  post: (p, b) => API.request("POST", p, b),
-  put: (p, b) => API.request("PUT", p, b),
-  patch: (p, b) => API.request("PATCH", p, b),
-  del: (p) => API.request("DELETE", p),
+  /**
+   * GET 优先查静态快照。命中就直接返回，不发网络请求 ——
+   * GitHub Pages 上没有后端，但页面必须能渲染。
+   */
+  get: (p) => {
+    const hit = staticLookup(p);
+    if (hit !== undefined) return Promise.resolve(hit);
+    return API.request("GET", p);
+  },
+  // GitHub Pages 上是纯静态文件，写操作没有任何后端可写 —— 提前挡掉，
+  // 别让页面去 fetch 一个返回 HTML 的 404 再抛出难懂的错误。
+  post: (p, b) => {
+    if (isStaticMode()) return Promise.reject(httpError(STATIC_READONLY_MSG, 405));
+    return API.request("POST", p, b);
+  },
+  put: (p, b) => {
+    if (isStaticMode()) return Promise.reject(httpError(STATIC_READONLY_MSG, 405));
+    return API.request("PUT", p, b);
+  },
+  patch: (p, b) => {
+    if (isStaticMode()) return Promise.reject(httpError(STATIC_READONLY_MSG, 405));
+    return API.request("PATCH", p, b);
+  },
+  del: (p) => {
+    if (isStaticMode()) return Promise.reject(httpError(STATIC_READONLY_MSG, 405));
+    return API.request("DELETE", p);
+  },
   // 上传走 multipart，不能自己设 Content-Type，浏览器要拿它写 boundary
   async upload(path, formData) {
     const res = await fetch(path, {
@@ -379,7 +495,13 @@ function createComments({ targetType, targetId, title = "大家的看法" }) {
     ]);
   }
 
-  root.append(head, form, list);
+  // 静态导出版没有后端可写：表单换成 Giscus（GitHub Discussions 承载），
+  // 历史评论仍作为快照照常展示。
+  const inputSlot = isStaticMode()
+    ? staticCommentSlot(targetType, targetId)
+    : form;
+
+  root.append(head, inputSlot, list);
 
   API.get(`/api/comments?target_type=${targetType}&target_id=${targetId}`)
     .then((rows) => {

@@ -1,0 +1,50 @@
+name: 静态导出冒烟测试
+
+# 为什么不是「推送自动上线」：
+# GitHub Pages 不运行 Python，而文章内容在 data/site.db 里（它被 .gitignore 挡着，
+# 本来就不该进仓库）。在 CI 里导出只会拿到一份空的示例数据 —— 拿它上线就是拿假内容
+# 覆盖真站点。所以真正的发布走本地：./deploy/pages.sh。
+# 这个工作流的职责是守住「导出管线没坏」，别等要上线了才发现跑不起来。
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: 装依赖
+        run: pip install -r requirements.txt
+
+      - name: 导出静态站
+        run: python tools/export_static.py --out dist --site-url https://example.com
+
+      - name: 校验产物
+        run: |
+          set -e
+          for f in index.html movies.html works.html resume.html 404.html sitemap.xml robots.txt .nojekyll; do
+            test -f "dist/$f" || { echo "缺少 dist/$f"; exit 1; }
+          done
+          # 页面必须真的内联了数据，不然静态站就是个空壳
+          for f in index.html movies.html works.html resume.html; do
+            grep -q "__SITE_DATA__" "dist/$f" || { echo "$f 没有内联数据"; exit 1; }
+          done
+          # 后台不该出现在静态产物里
+          test ! -f dist/admin.html || { echo "admin.html 不该被导出"; exit 1; }
+          echo "产物校验通过：$(find dist -type f | wc -l) 个文件"
+
+      - name: 上传产物（便于排查）
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-smoke
+          path: dist
+          retention-days: 3
