@@ -5,13 +5,19 @@
     python tools/import_horror_candidates.py               # 真导入
     python tools/import_horror_candidates.py --replace     # 先删掉已有候选再导入
 
+    # 导入另一份片单（如伪纪录片），整份强制归到某个分类：
+    python tools/import_horror_candidates.py \
+        --src data/found_footage.json --category 伪纪录片 --dry-run
+
 安全设计（沿用 import_two_works.py 的教训）：
     - 跑前自动把 site.db（含 -wal/-shm）备份到 backup/movies-candidates-<日期>/
     - --dry-run 全程不写库
     - 幂等：按 tmdb_id 判重，已存在就跳过（除非 --replace）
     - **绝不碰 status='watched' 的正式档案**，只增删候选
+    - 不加 --replace 时**只增不删**，所以导入新片单不会动到已有的候选
 
-数据来源：data/horror_candidates.json（由 tools/fetch_horror_candidates.py 生成）
+数据来源：data/horror_candidates.json（tools/fetch_horror_candidates.py 生成）
+          data/found_footage.json（tools/fetch_found_footage.py 生成）
 """
 from __future__ import annotations
 
@@ -98,8 +104,18 @@ def pick_category_id(rec: dict, cat_by_name: dict[str, int]) -> int | None:
     return None
 
 
-def build_payload(rec: dict, cat_by_name: dict[str, int]) -> dict:
-    """候选片只填「资料」部分，不留任何评价 —— 评价等站长看完自己写。"""
+def build_payload(rec: dict, cat_by_name: dict[str, int], force_category: str | None = None) -> dict:
+    """候选片只填「资料」部分，不留任何评价 —— 评价等站长看完自己写。
+
+    force_category：按名字强制指定分类（如「伪纪录片」）。用于整份片单都归属同一
+    分类的场景 —— 伪纪录片这类**类型标签**在 TMDB 的 genre 里根本不存在，
+    靠 pick_category_id 推导不出来，必须显式指定。
+    """
+    category_id = (
+        cat_by_name[force_category]
+        if force_category and force_category in cat_by_name
+        else pick_category_id(rec, cat_by_name)
+    )
     return {
         "title": rec["title"],
         "original_title": rec.get("original_title") or "",
@@ -113,7 +129,7 @@ def build_payload(rec: dict, cat_by_name: dict[str, int]) -> dict:
         "runtime": int(rec.get("runtime") or 0),
         "tmdb_rating": float(rec.get("tmdb_rating") or 0),
         "genres": rec.get("genres") or [],
-        "category_id": pick_category_id(rec, cat_by_name),
+        "category_id": category_id,
         # 评分字段留默认值，站长打分时再改
         "rating": 0.0,
         "verdict": "",
@@ -132,6 +148,11 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true", help="只显示计划，不写库")
     ap.add_argument("--replace", action="store_true", help="先清掉已有候选片再导入")
     ap.add_argument("--src", default=str(SRC), help="候选 JSON 路径")
+    ap.add_argument(
+        "--category",
+        default=None,
+        help="强制把这些条目归到某个分类名下（如「伪纪录片」），不指定则按 TMDB 类型推导",
+    )
     args = ap.parse_args()
 
     src = Path(args.src)
@@ -153,6 +174,11 @@ def main() -> int:
         cats = db.query(M.Category).filter(M.Category.kind == "movie_genre").all()
         cat_by_name = {c.name: c.id for c in cats}
         print(f"[分类] 可用：{', '.join(cat_by_name)}")
+        if args.category:
+            if args.category not in cat_by_name:
+                print(f"[错误] 分类「{args.category}」不存在，可用：{', '.join(cat_by_name)}")
+                return 1
+            print(f"[强制分类] 全部条目归到「{args.category}」(id={cat_by_name[args.category]})")
 
         existing = {m.tmdb_id: m for m in db.query(M.Movie).all() if m.tmdb_id}
         watched_titles = {
@@ -180,7 +206,7 @@ def main() -> int:
                 skipped += 1
                 continue
 
-            payload = build_payload(rec, cat_by_name)
+            payload = build_payload(rec, cat_by_name, args.category)
 
             hit = existing.get(tid) if tid else None
             if hit:

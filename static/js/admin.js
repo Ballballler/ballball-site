@@ -643,6 +643,10 @@ function buildField(field, record) {
       if ((value ?? field.default) === o.value) opt.selected = true;
       input.appendChild(opt);
     });
+    // 记下初值：collectForm 只在这个字段**真被改动过**时才提交它。
+    // 起因：电影档案的「状态」下拉（看过 / 待看）曾被整份提交写回，
+    // 把正经档案打回了候选区——下拉保持不动就不该提交。
+    input.dataset.initial = String(input.value);
   } else if (field.type === "category") {
     input = el("select", { class: "select" });
     input.appendChild(el("option", { value: "", text: "未分类" }));
@@ -1082,6 +1086,11 @@ function collectForm(formEl, fields) {
   fields.forEach((f) => {
     const input = formEl.querySelector(`[data-key="${f.key}"]`);
     if (!input) return;
+    // 下拉框（select）没被改过就不提交：编辑表单会把整份字段一起 PUT，
+    // 一个没动过的「状态」字段不该因为出现在表单里就被写回一次。
+    if (f.type === "select" && input.dataset.initial !== undefined) {
+      if (String(input.value) === String(input.dataset.initial)) return;
+    }
     let v = input.value;
     if (f.type === "number") {
       v = v === "" ? undefined : Number(v);

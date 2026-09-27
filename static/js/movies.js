@@ -16,6 +16,7 @@ const state = {
   candidates: [],
   categories: [],
   activeCategory: 0,
+  candidateCategory: 0, // 候选区的分类筛选：0 = 全部（含未分类）
   query: "",
 };
 
@@ -38,11 +39,21 @@ function renderCandidates() {
   }
   host.hidden = false;
   grid.textContent = "";
+
+  // 分类筛选：0 = 全部；-1 = 未分类；其余按 category_id 精确匹配
+  const shown = state.candidates.filter((m) => {
+    if (!state.candidateCategory) return true;
+    if (state.candidateCategory === -1) return m.category_id == null;
+    return m.category_id === state.candidateCategory;
+  });
+
   const hint = document.getElementById("candidates-hint");
   if (hint) {
-    hint.textContent = `还有 ${state.candidates.length} 部没看。打完分就算看过，会挪进正式档案；不想看的点「不看」划掉。`;
+    hint.textContent = state.candidateCategory
+      ? `这一栏有 ${shown.length} 部。打完分就算看过，会挪进正式档案；不想看的点「不看」划掉。`
+      : `还有 ${shown.length} 部没看。打完分就算看过，会挪进正式档案；不想看的点「不看」划掉。`;
   }
-  state.candidates.forEach((m, i) => grid.appendChild(buildCandidateCard(m, i)));
+  shown.forEach((m, i) => grid.appendChild(buildCandidateCard(m, i)));
   revealStaggered(grid);
 }
 
@@ -309,6 +320,44 @@ function renderFilters() {
   wrap.appendChild(mk("全部", 0));
   state.categories.forEach((c) => wrap.appendChild(mk(c.name, c.id)));
   wrap.appendChild(mk("未分类", -1));
+}
+
+/* 候选区的分类筛选。
+   候选片单可能包含多个来源（大众恐怖片 / 伪纪录片 …），平铺在一起来看很糊，
+   所以给它自己的分类栏 —— 与上面正式档案的筛选互相独立。 */
+function renderCandidateFilters() {
+  const wrap = document.getElementById("candidates-filters");
+  if (!wrap) return;
+  wrap.textContent = "";
+
+  // 只列出**真的在候选区里有片子**的分类，避免点进去一片空白
+  const counts = new Map();
+  state.candidates.forEach((m) => {
+    const key = m.category_id == null ? -1 : m.category_id;
+    counts.set(key, (counts.get(key) || 0) + 1);
+  });
+
+  const mk = (label, value, count) => {
+    const b = el("button", {
+      type: "button",
+      class: "filter" + (state.candidateCategory === value ? " is-active" : ""),
+      text: count == null ? label : `${label} ${count}`,
+      "aria-pressed": state.candidateCategory === value ? "true" : "false",
+    });
+    b.addEventListener("click", () => {
+      state.candidateCategory = value;
+      renderCandidateFilters();
+      renderCandidates();
+    });
+    return b;
+  };
+
+  wrap.appendChild(mk("全部", 0, state.candidates.length));
+  state.categories.forEach((c) => {
+    const n = counts.get(c.id);
+    if (n) wrap.appendChild(mk(c.name, c.id, n));
+  });
+  if (counts.get(-1)) wrap.appendChild(mk("未分类", -1, counts.get(-1)));
 }
 
 /* ---------------------------- 网格 ---------------------------- */
@@ -715,6 +764,7 @@ async function reloadMovies() {
     state.categories = categories || [];
     renderStats();
     renderFilters();
+    renderCandidateFilters();
     renderCandidates();
     renderGrid();
   } catch (err) {
@@ -734,6 +784,7 @@ async function boot() {
     renderStats();
     renderFilters();
     initSearchbar();
+    renderCandidateFilters();
     renderCandidates();
     renderGrid();
     // 区块的显示与顺序由后台「页面区块」决定
