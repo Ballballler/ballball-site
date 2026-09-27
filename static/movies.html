@@ -55,6 +55,29 @@
           <p>主观评价，每一部都写了长评：评分、恐怖强度、值不值得看。</p>
         </div>
 
+        <!-- 看完 → 搜索 → 写评价 → 存档：入口都在这条栏里 -->
+        <div class="searchbar glass" id="movie-searchbar">
+          <form class="searchbar__form" role="search" id="movie-search-form">
+            <label class="sr-only" for="movie-q">搜索片名、原名或导演</label>
+            <input
+              id="movie-q"
+              class="searchbar__input"
+              type="search"
+              inputmode="search"
+              autocomplete="off"
+              placeholder="搜片名 / 导演，例如：闪灵"
+              aria-describedby="movie-search-status"
+            />
+            <button class="searchbar__clear" type="button" id="movie-q-clear" hidden>
+              清除
+            </button>
+          </form>
+          <button class="searchbar__add" type="button" id="movie-add">
+            <span aria-hidden="true">＋</span> 登记一部
+          </button>
+          <p class="searchbar__status" id="movie-search-status" role="status" aria-live="polite"></p>
+        </div>
+
         <div class="film-layout">
           <!-- 幽灵 + 幽灵系宝可梦：这一页的主视觉 -->
           <div class="ghost-stage glass" id="movie-hero">

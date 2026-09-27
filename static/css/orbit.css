@@ -769,6 +769,128 @@ dialog.modal--admin > .modal__panel {
 .tmdb__overview { margin: 4px 0 0; font-size: 0.8rem; color: var(--muted); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .tmdb__actions { flex-shrink: 0; }
 
+/* --------------------- 电影页搜索栏 / 登记弹层 --------------------- */
+/* 「看完 → 搜索 → 写评价 → 存档」的入口。移动端优先：窄屏换列。 */
+.searchbar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px 12px;
+  align-items: center;
+  padding: 16px 18px;
+  margin: 0 0 26px;
+}
+.searchbar__form { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.searchbar__input {
+  flex: 1; min-width: 0;
+  padding: 11px 14px;
+  font: inherit; font-size: 14px;
+  color: var(--ink);
+  background: #ffffff06;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  transition: border-color .2s var(--ease), background .2s var(--ease);
+}
+.searchbar__input::placeholder { color: var(--muted); }
+.searchbar__input:hover { background: #ffffff0a; }
+.searchbar__input:focus-visible {
+  outline: none;
+  border-color: var(--mint);
+  background: #ffffff0c;
+  box-shadow: 0 0 0 3px #8fb8a825;
+}
+/* type=search 在 WebKit 下自带的清除按钮和我们的重复，去掉 */
+.searchbar__input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+.searchbar__clear,
+.searchbar__add {
+  flex-shrink: 0;
+  padding: 11px 16px;
+  font: inherit; font-size: 13px;
+  color: var(--ink);
+  background: #ffffff08;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform .18s var(--ease), background .18s var(--ease), border-color .18s var(--ease);
+}
+.searchbar__clear:hover,
+.searchbar__add:hover { background: #ffffff12; transform: translateY(-1px); }
+.searchbar__clear:active,
+.searchbar__add:active { transform: scale(.97); }
+.searchbar__add { color: var(--mint); border-color: #8fb8a840; }
+.searchbar__add:hover { background: #8fb8a814; border-color: #8fb8a870; }
+.searchbar__clear:focus-visible,
+.searchbar__add:focus-visible { outline: 2px solid var(--mint); outline-offset: 2px; }
+.searchbar__status {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  min-height: 1.2em;
+}
+.searchbar__status--empty { color: var(--amber); }
+
+/* 登记弹层：搜到片之后的「写评价」表单 */
+.enroll__picked {
+  display: grid; grid-template-columns: 64px 1fr; gap: 14px; align-items: start;
+  padding: 14px; border-radius: 14px; background: #ffffff05; border: 1px solid var(--line);
+}
+.enroll__picked img { width: 64px; height: 96px; object-fit: cover; border-radius: 8px; background: #0d1017; }
+.enroll__field { display: grid; gap: 7px; margin: 0 0 16px; }
+.enroll__label { font-size: 12px; color: var(--muted); }
+.enroll__field input[type="text"],
+.enroll__field input[type="date"],
+.enroll__field select,
+.enroll__field textarea {
+  padding: 10px 12px;
+  font: inherit; font-size: 14px;
+  color: var(--ink);
+  background: #ffffff06;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+}
+.enroll__field textarea { min-height: 96px; resize: vertical; line-height: 1.8; }
+.enroll__field input:focus-visible,
+.enroll__field select:focus-visible,
+.enroll__field textarea:focus-visible {
+  outline: none; border-color: var(--mint); box-shadow: 0 0 0 3px #8fb8a825;
+}
+/* 评分滑块：数字要跟着动，所以配一个 output */
+.enroll__range { display: flex; align-items: center; gap: 12px; }
+.enroll__range input[type="range"] { flex: 1; accent-color: var(--mint); }
+.enroll__output {
+  min-width: 46px; text-align: right;
+  font-family: var(--mono); font-size: 15px; color: var(--coral);
+}
+/* 强度 / 推荐：五档点选，用 aria-pressed 表达状态，不靠颜色单独传达 */
+.enroll__dots { display: flex; gap: 8px; flex-wrap: wrap; }
+.enroll__dot {
+  width: 34px; height: 34px; padding: 0;
+  font: inherit; font-size: 12px;
+  color: var(--muted);
+  background: #ffffff06;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform .16s var(--ease), color .16s var(--ease), border-color .16s var(--ease);
+}
+.enroll__dot:hover { transform: translateY(-1px); color: var(--ink); }
+.enroll__dot[aria-pressed="true"] { color: var(--coral); border-color: #c79a9280; background: #c79a9214; }
+.enroll__dot:focus-visible { outline: 2px solid var(--mint); outline-offset: 2px; }
+.enroll__actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
+.enroll__hint { margin: 6px 0 0; font-size: 11px; color: var(--muted); }
+
+@media (max-width: 760px) {
+  .searchbar { grid-template-columns: 1fr; padding: 14px; }
+  .searchbar__add { width: 100%; }
+  .enroll__actions .button { flex: 1; }
+}
+
+/* 偏好减少动效：位移类过渡全部关掉 */
+@media (prefers-reduced-motion: reduce) {
+  .searchbar__clear, .searchbar__add, .enroll__dot { transition: none; }
+  .searchbar__clear:hover, .searchbar__add:hover, .enroll__dot:hover { transform: none; }
+}
+
 /* 全局错误条 */
 .fatal {
   position: fixed; inset: 0 0 auto 0; z-index: 999;

@@ -349,7 +349,7 @@ async def tmdb_discover(
 async def create_movie_from_tmdb(
     payload: MovieFromTmdb, _: bool = require_admin
 ) -> Movie:
-    """一键建档：抓 TMDB 详情，把元数据字段全部填好，自己的字段留空待填。"""
+    """一键建档：抓 TMDB 详情填元数据，评价字段按传进来的写（可留空）。"""
     try:
         info = await tmdb.movie_detail(payload.tmdb_id)
     except tmdb.TmdbError as exc:
@@ -383,6 +383,8 @@ async def create_movie_from_tmdb(
             scare_level=payload.scare_level,
             recommend_level=payload.recommend_level,
             watched_at=payload.watched_at,
+            verdict=payload.verdict,
+            review=payload.review,
             tags=[g.get("name") for g in (info.get("genres") or [])][:4],
         )
         db.add(item)

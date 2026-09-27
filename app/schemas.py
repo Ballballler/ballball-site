@@ -523,7 +523,12 @@ class TmdbSearchOut(BaseModel):
 
 
 class MovieFromTmdb(BaseModel):
-    """从 TMDB 一键建档：只传 tmdb_id，其余字段由服务端抓。"""
+    """从 TMDB 一键建档。
+
+    元数据（海报 / 简介 / 年份 / 导演）由服务端抓；
+    评价字段可选 —— 前台「看完 → 搜索 → 写评价 → 保存」会一次性带上，
+    后台手动导入时留空，之后再补。
+    """
 
     tmdb_id: int
     category_id: int | None = None
@@ -531,6 +536,8 @@ class MovieFromTmdb(BaseModel):
     scare_level: int = Field(default=3, ge=0, le=5)
     recommend_level: int = Field(default=3, ge=0, le=5)
     watched_at: str = Field(default="", max_length=20)
+    verdict: str = Field(default="", max_length=300)
+    review: str = ""
 
 
 PageKey = Literal["index", "resume", "movies", "works"]

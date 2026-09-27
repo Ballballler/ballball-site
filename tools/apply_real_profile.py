@@ -40,12 +40,31 @@ def sync_profile(db) -> int:
     return len(changed)
 
 
+def _resume_fingerprint(item: dict | ResumeItem) -> tuple:
+    """条目完整指纹。
+
+    只比 title 是不够的：精简文案时标题往往不变，变的只有 summary / highlights，
+    那样会被误判成「没变化」而整段跳过。这里把内容字段全算进去。
+    """
+    get = (lambda k: item[k]) if isinstance(item, dict) else (lambda k: getattr(item, k))
+    return (
+        get("title"),
+        get("org"),
+        get("start_date"),
+        get("end_date"),
+        bool(get("current")),
+        (get("summary") or "").strip(),
+        tuple(tuple(get("tags") or ())),
+        tuple((get("highlights") or ())),
+    )
+
+
 def sync_resume(db) -> tuple[int, int]:
     """全量替换：旧条目是占位示例，没有保留价值。"""
     existing = db.query(ResumeItem).order_by(ResumeItem.sort_order, ResumeItem.id).all()
-    old_titles = [i.title for i in existing]
-    new_titles = [i["title"] for i in RESUME_ITEMS]
-    if old_titles == new_titles:
+    old_fp = [_resume_fingerprint(i) for i in existing]
+    new_fp = [_resume_fingerprint(i) for i in RESUME_ITEMS]
+    if old_fp == new_fp:
         return 0, 0
     if not DRY:
         for row in existing:
