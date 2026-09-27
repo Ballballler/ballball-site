@@ -1,13 +1,25 @@
-"""把站点里的雇主名、产品线等身份信息换成行业代称。
+"""把站点数据库里的雇主名、产品线等身份信息换成行业代称。
 
-为什么单独成 script：站点要推公开仓库和 GitHub Pages，公司名一旦上线就收不回来。
+为什么单独成 script：站点推的是公开仓库和 GitHub Pages，公司名一旦上线就收不回来。
 数据只有本地 data/site.db 一份，改之前脚本会先备份。
+
+⚠️ 映射表不住在仓库里
+    要被替换的原文（公司全称、产品线）本身就是隐私 —— 把它写进代码，等于在公开仓库
+    里留一份「原名 → 化名」对照表，脱敏等于白做。所以 REPLACEMENTS 不再内联，
+    改成从 **data/identity_map.json** 读取（data/ 整个被 .gitignore 挡着）。
+
+    文件格式（数组，**长串在前**，否则「A 地图打车」会先被「A」截断）：
+        [
+          ["某某某某有限公司", "某垂直行业公司"],
+          ["某产品线", "某业务线"]
+        ]
+    其中 **原文与替身相同的条目算「保护项」**：它们会被先藏起来、最后原样放回，
+    用来挡住同形异构的误伤（例如某影片简介里的某星级主厨头衔）。
+    本地没有这个文件时脚本会直接退出并说明 —— 带着空映射跑完，会让人误以为库已干净。
 
 用法：
     python tools/deidentify.py --check     # 只扫描，不改库
     python tools/deidentify.py             # 执行替换（幂等，重复跑不会叠加）
-
-顺序敏感：长串必须先替换，否则「出行业务」会先被「某互联网公司」截断。
 """
 from __future__ import annotations
 
@@ -21,26 +33,33 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DB = ROOT / "data" / "site.db"
-
-# (原文, 替身)。长串在前。
-REPLACEMENTS: list[tuple[str, str]] = [
-    ("出行业务", "出行业务"),
-    ("某全球消费电子品牌 · 中国区官网运营", "某全球消费电子品牌 · 中国区官网运营"),
-    ("某出行服务平台", "某出行服务平台"),
-    ("某零售集团（购物中心）", "某零售集团（购物中心）"),
-    ("负责某全球消费电子品牌", "负责某全球消费电子品牌"),
-    ("某全球消费电子品牌", "某全球消费电子品牌"),
-    ("在一家互联网公司", "在一家互联网公司"),
-    ("某互联网公司", "某互联网公司"),
-]
+MAP_FILE = ROOT / "data" / "identity_map.json"
 
 # 这些留着不替换是有意的，改动前先想清楚：
 #   - 北京物资学院：学历需要可核验，泛化了反而像在隐瞒
-#   - 962817243@qq.com：站点对外联系邮箱，bio 里也写了「发邮件反驳我」
-KEEP = ["北京物资学院", "962817243@qq.com"]
+#   - 对外联系邮箱：bio 里也写了「发邮件反驳我」
+KEEP = ["北京物资学院"]
 
 TABLES = ["profile", "resume_item", "skill_item", "journey_step", "work",
           "interest", "movie", "page_section", "category"]
+
+
+def load_map(path: Path) -> list[tuple[str, str]]:
+    """读外部映射表。缺文件要明确失败 —— 空映射跑完会伪装成「已经干净」。"""
+    if not path.exists():
+        print(f"缺少映射文件：{path}", file=sys.stderr)
+        print("照 tools/identity_map.example.json 的格式建一个，填「原文 → 代称」。", file=sys.stderr)
+        raise SystemExit(2)
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        print(f"映射文件不是合法 JSON：{exc}", file=sys.stderr)
+        raise SystemExit(2) from exc
+    out = [(str(a), str(b)) for pair in raw for a, b in [pair] if str(a)]
+    if not out:
+        print("映射文件是空的，什么都不会替换。", file=sys.stderr)
+        raise SystemExit(2)
+    return out
 
 
 def pk_of(row: sqlite3.Row) -> str:
@@ -52,22 +71,58 @@ def pk_of(row: sqlite3.Row) -> str:
 
 def _ascii_escaped(s: str) -> str:
     """把中文转成 \\uXXXX。highlights / tags 这些 JSON 字段是用 ensure_ascii=True
-    存的，原文在库里是转义形态，直接按中文找会漏（出行业务就漏过一次）。"""
+    存的，原文在库里是转义形态，直接按中文找会漏（有记录度 > 40 的一次漏网）。"""
     return json.dumps(s, ensure_ascii=True)[1:-1]
 
 
-def pairs() -> list[tuple[str, str]]:
-    """每个替换都配一版「原文转转义」的写法，两种形态都覆盖。"""
-    out: list[tuple[str, str]] = []
-    for needle, repl in REPLACEMENTS:
-        out.append((needle, repl))
-        esc_n = _ascii_escaped(needle)
-        if esc_n != needle:
-            out.append((esc_n, _ascii_escaped(repl)))
-    return out
+def _forms(s: str) -> list[str]:
+    """同一个串的两种形态：中文原文 + \\uXXXX 转义。去重后返回。"""
+    esc = _ascii_escaped(s)
+    return [s] if esc == s else [s, esc]
 
 
-def scan(conn: sqlite3.Connection) -> list[tuple[str, object, str, str]]:
+def split_guards(replacements: list[tuple[str, str]]
+                 ) -> tuple[list[str], list[tuple[str, str]]]:
+    """映射里 **原文 == 替身** 的条目算「保护项」，不是替换。
+
+    典型例子：某部电影的简介里有「某星级主厨」，跟公司名无关，不能被
+    「那条短规则」误伤。保护项先被换成哨兵藏起来，替换跑完再原样放回，
+    这样无论它在列表里的什么位置都不会被后面的短串截断。
+    """
+    guards = [needle for needle, repl in replacements if needle == repl]
+    real = [(n, r) for n, r in replacements if n != r]
+    return guards, real
+
+
+def apply_replacements(text: str, replacements: list[tuple[str, str]]) -> str:
+    """按「先藏保护项 → 跑替换 → 还原保护项」的顺序处理。"""
+    guards, real = split_guards(replacements)
+    tokens: dict[str, str] = {}
+    for gi, guard in enumerate(guards):
+        for fi, form in enumerate(_forms(guard)):
+            token = f"\x00{gi}.{fi}\x00"
+            tokens[token] = form
+            text = text.replace(form, token)
+    for needle, repl in real:
+        for n_form, r_form in zip(_forms(needle), _forms(repl)):
+            text = text.replace(n_form, r_form)
+    for token, form in tokens.items():
+        text = text.replace(token, form)
+    return text
+
+
+def hits_in(text: str, replacements: list[tuple[str, str]]) -> list[str]:
+    """返回这段文本里真正命中的 needle（保护项已经先被抠掉，不会误报）。"""
+    guards, real = split_guards(replacements)
+    masked = text
+    for gi, guard in enumerate(guards):
+        for fi, form in enumerate(_forms(guard)):
+            masked = masked.replace(form, f"\x00{gi}.{fi}\x00")
+    return [needle for needle, _ in real for f in _forms(needle) if f in masked]
+
+
+def scan(conn: sqlite3.Connection, replacements: list[tuple[str, str]]
+         ) -> list[tuple[str, object, str, str]]:
     """返回还剩哪些隐私串。"""
     hits: list[tuple[str, object, str, str]] = []
     for table in TABLES:
@@ -81,13 +136,13 @@ def scan(conn: sqlite3.Connection) -> list[tuple[str, object, str, str]]:
                 val = row[col]
                 if not isinstance(val, str):
                     continue
-                for needle, _ in pairs():
-                    if needle in val:
-                        hits.append((table, row[pk], col, needle))
+                needles = hits_in(val, replacements)
+                for needle in needles:
+                    hits.append((table, row[pk], col, needle))
     return hits
 
 
-def bake(conn: sqlite3.Connection) -> int:
+def bake(conn: sqlite3.Connection, replacements: list[tuple[str, str]]) -> int:
     total = 0
     for table in TABLES:
         try:
@@ -103,9 +158,7 @@ def bake(conn: sqlite3.Connection) -> int:
                 val = row[col]
                 if not isinstance(val, str) or not val:
                     continue
-                new = val
-                for needle, repl in pairs():
-                    new = new.replace(needle, repl)
+                new = apply_replacements(val, replacements)
                 if new != val:
                     patch[col] = new
             if not patch:
@@ -124,8 +177,11 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true", help="只扫描不修改")
     ap.add_argument("--db", default=str(DB))
+    ap.add_argument("--map", default=str(MAP_FILE), help="原名 → 代称的映射表（不入库）")
     args = ap.parse_args()
 
+    map_file = Path(args.map)
+    replacements = load_map(map_file)
     db = Path(args.db)
     if not db.exists():
         print(f"找不到数据库：{db}", file=sys.stderr)
@@ -135,7 +191,7 @@ def main() -> int:
     conn.row_factory = sqlite3.Row
 
     if args.check:
-        hits = scan(conn)
+        hits = scan(conn, replacements)
         if hits:
             for t, rid, col, needle in hits:
                 print(f"命中 {t}#{rid} 的 {col}：包含「{needle}」")
@@ -149,10 +205,10 @@ def main() -> int:
     shutil.copy2(db, backup)
     print(f"已备份到 {backup.name}")
 
-    n = bake(conn)
+    n = bake(conn, replacements)
     conn.commit()
 
-    left = scan(conn)
+    left = scan(conn, replacements)
     print(f"\n改动字段 {n} 个；剩余未替换 {len(left)} 处")
     for t, rid, col, needle in left:
         print(f"  !! {t}#{rid}.{col} 仍含「{needle}」")
