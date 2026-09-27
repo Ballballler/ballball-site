@@ -241,3 +241,24 @@ SMOKE_ADMIN_PASSWORD='你的口令' node smoke.js
 
 忘了口令就删掉 `data/admin.json` 重启，会退回默认 `admin12345`（首页会出警告条，
 部署前一定要改掉）。
+
+### 批量导入本地文件当作品
+
+桌面上攒了一堆自己做的小样，想一次性传上来、顺手清掉旧条目时用它：
+
+```bash
+.venv/Scripts/python.exe tools/import_two_works.py --dry-run   # 只看计划，不动数据
+.venv/Scripts/python.exe tools/import_two_works.py             # 真跑
+.venv/Scripts/python.exe tools/import_two_works.py --keep-existing  # 只加不删
+```
+
+它做的事：按 `WORKS` 列表校验音频（复用 `_looks_like_audio`，不绕过防线）→
+落盘到 `static/uploads/<年月>/` → 建 / 更新作品行 → **删掉本次导入之外的其余作品**。
+跑之前自动把 `site.db`（含 -wal/-shm）备份到 `backup/works-import-<日期>/`。
+要换文件或改名字，直接改脚本顶部的 `WORKS` 列表 —— 按 `title` 判重，重跑安全。
+
+`.mp4` 这种带视频壳的文件不会被音频白名单收，先抽音轨再传：
+
+```bash
+ffmpeg -i input.mp4 -vn -c:a libmp3lame -q:a 2 output.mp3
+```
