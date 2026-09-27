@@ -63,6 +63,16 @@ def build_snapshot(client: TestClient) -> dict:
     for path in SIMPLE_ENDPOINTS:
         snap[path] = _get_json(client, path)
 
+    # 支持 /api/movies：静态站的候选区（movie-candidates）永远隐藏 —— 评委要打分、
+    # 要删都得分得依赖后端，静态模式直接 return 掉了。所以这几十部「还没看」的片子
+    # 既不显示、又要占掉快照七成体积，还等于把站长的想看清单公开给任何查看源码的人。
+    movies = snap.get("/api/movies")
+    if isinstance(movies, list):
+        dropped = [m for m in movies if (m or {}).get("status") == "candidate"]
+        if dropped:
+            snap["/api/movies"] = [m for m in movies if (m or {}).get("status") != "candidate"]
+            print(f"   ✓ 剔除候选片 {len(dropped)} 部（静态站不展示，避免想看清单外泄）")
+
     for page in PAGE_SECTIONS:
         path = f"/api/page-sections/{page}"
         snap[path] = _get_json(client, path)
