@@ -85,9 +85,9 @@ def split_guards(replacements: list[tuple[str, str]]
                  ) -> tuple[list[str], list[tuple[str, str]]]:
     """映射里 **原文 == 替身** 的条目算「保护项」，不是替换。
 
-    典型例子：某部电影的简介里有「某星级主厨」，跟公司名无关，不能被
-    「那条短规则」误伤。保护项先被换成哨兵藏起来，替换跑完再原样放回，
-    这样无论它在列表里的什么位置都不会被后面的短串截断。
+    典型例子：某部影片简介里提到某个评鉴体系的星级主厨，跟你要藏的公司名
+    撞了字面写法，但意思毫无关系。保护项会把这类串先换成哨兵藏起来，
+    替换跑完再原样放回，于是无论它在列表里的什么位置都不会被短串截断。
     """
     guards = [needle for needle, repl in replacements if needle == repl]
     real = [(n, r) for n, r in replacements if n != r]
