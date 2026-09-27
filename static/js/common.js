@@ -763,4 +763,35 @@ document.addEventListener("DOMContentLoaded", () => {
   initNav();
   initCursor();
   initReveal();
+  initStaleCheck();
 });
+
+/* ------------------------- 旧版本提醒 -------------------------
+   GitHub Pages 对 HTML 固定发 max-age=600。改完内容，老访客最多 10 分钟
+   还在看旧页面 —— 而且他自己没法知道。导出时会把构建时间戳写进 build.json
+   并内联进页面；启动时拉一次远端 build.json 比对，对不上就是手里这份旧了。
+   只在静态站（有 __SITE_DATA__）里做，本地开发不打扰。 */
+function initStaleCheck() {
+  if (!isStaticMode()) return;
+  const mine = window.__BUILD_STAMP__;
+  if (!mine) return;
+  // 页面开着的时候不重复烦人
+  try {
+    if (sessionStorage.getItem("bb-stale-warned") === mine) return;
+  } catch (_) { /* 隐私模式下 sessionStorage 可能不可用，忽略 */ }
+
+  fetch(`build.json?_=${Date.now()}`, { cache: "no-store" })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((data) => {
+      if (!data || !data.built_at || data.built_at === mine) return;
+      try { sessionStorage.setItem("bb-stale-warned", mine); } catch (_) {}
+      toast("站点内容已更新，刷新一下就是最新的", "ok");
+      const bar = document.createElement("button");
+      bar.type = "button";
+      bar.className = "stale-bar";
+      bar.textContent = "有新版本 ↓ 点这里刷新";
+      bar.addEventListener("click", () => location.reload());
+      document.body.appendChild(bar);
+    })
+    .catch(() => { /* 拉不到就算了，不影响页面 */ });
+}

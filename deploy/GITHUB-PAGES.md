@@ -138,20 +138,63 @@ yourdomain.com   CNAME   ballballler.github.io
 
 ---
 
+## ⚠️ 子路径陷阱（踩过，务必知道）
+
+站点地址是 `https://<用户名>.github.io/<仓库名>/` —— **多一层子路径**。
+普通网站跑在根目录，这里不是。后果：
+
+**以 `/` 开头的地址会 404。** 比如 `/uploads/2026-09/x.mp3` 会被解析成
+`https://<用户名>.github.io/uploads/2026-09/x.mp3`（根域名下没这个文件），
+正确的地址是 `https://<用户名>.github.io/<仓库名>/uploads/2026-09/x.mp3`。
+
+表现很有迷惑性：**页面看着完全正常，点播放却毫无反应** ——
+因为 HTML 里的 css/js 一直用相对路径（`js/home.js`）没事，
+出事的只有数据库里那些「上传后存下来的地址」（`audio_url` / `avatar` / `cover`）。
+
+已修在 `tools/export_static.py` 的 `_relativize_local_urls()`：导出时把这些字段
+开头的 `/` 去掉，让它们跟着当前页面走。**TMDB 的 https 外链不动**（绝对地址本来就没问题）。
+
+**验证时必须在子路径下跑**，不能只测 `http://127.0.0.1:8899/works.html`：
+
+```bash
+mkdir -p /tmp/ghsim/ballball-site && cp -a dist/. /tmp/ghsim/ballball-site/
+cd /tmp/ghsim && python -m http.server 8899 &
+node check_static.js "http://127.0.0.1:8899/ballball-site"
+```
+
+`check_static.js` 里有条断言会用 `new Audio()` 真拉一次音频元数据 ——
+**别删它**。光断言「`<audio>` 元素存在」是抓不到这个 bug 的。
+
+## ⏱ HTML 会被缓存 10 分钟
+
+Pages 对 HTML 固定发 `Cache-Control: max-age=600`（改不了）。
+所以推完代码立刻打开页面，**可能还是旧内容**，等一会儿或强刷（Ctrl+F5）才更新。
+
+导出时会写一份 `build.json`（只含一个 `built_at` 时间戳）并内联进页面，
+`common.js` 的 `initStaleCheck()` 启动时比对一次：发现本地这份是旧的，
+就弹一条「有新版本，点这里刷新」的提示条。只在静态站里生效，本地开发不打扰。
+
+排查「改了内容线上没变」时，**先确认不是缓存**，再去怀疑代码：
+
+```bash
+curl -s https://<用户名>.github.io/<仓库名>/build.json   # 看线上构建时间
+```
+
 ## 日常更新流程
 
 1. 本地起服务：`.venv\Scripts\python.exe run.py --port 8800`
 2. 进 `http://127.0.0.1:8800/admin.html` 改内容
 3. 跑 `deploy/pages.sh`（或 `pages.bat`）
-4. 一两分钟后 Pages 生效
+4. 一两分钟后 Pages 生效（HTML 另有最多 10 分钟缓存，见上一节）
 
 **改了 CSS/JS 也要重新跑导出** —— 导出会把代码一起打进产物里。
 
 ## 上线检查清单
 
 - [ ] 首页能打开，名字/简介是自己填的（不是示例数据）
-- [ ] 电影页 6 张卡、音乐页 4 张卡都在
+- [ ] 电影页、音乐页的卡片都在，且**数量对得上后台**
 - [ ] 点卡片能弹出详情（居中、有关闭按钮）
+- [ ] **音频能真的播放**（不是只看得到播放器）—— 见「子路径陷阱」
 - [ ] 简历页时间轴、技能球正常
 - [ ] `sitemap.xml` 里的域名是你自己的
 - [ ] `https://…/admin.html` 是说明页、带 noindex（后台没被传上去）

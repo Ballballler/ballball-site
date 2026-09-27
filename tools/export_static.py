@@ -85,8 +85,36 @@ def _inline_script(var: str, payload: str) -> str:
     return f"<script>window.{var}={safe}</script>"
 
 
-def render_pages(dist: Path, snap: dict, site_url: str) -> list[str]:
+# 站内绝对路径（以 / 开头、不是 //cdn 这种协议相对地址）在 GitHub Pages 上会断：
+# 站点部署在 /ballball-site/ 子路径下，而 /uploads/x.mp3 会被解析成
+# https://<user>.github.io/uploads/x.mp3 —— 根域名下根本没这个文件，直接 404。
+# 页面本身没事是因为 HTML 里的 css/js 全用的相对路径；出问题的只有数据库里
+# 那些「上传后存下来的地址」（audio_url / avatar / cover 这类）。
+#
+# 修法是把这些值改成相对路径（去掉开头的 /），让它们跟着当前页面走。
+# 只动上面这几个「本地资源」字段，不碰 TMDB 的 https 外链。
+_LOCAL_URL_FIELDS = ("audio_url", "avatar", "cover", "poster")
+
+
+def _relativize_local_urls(node):
+    """递归去掉站内绝对路径开头的斜杠。原地改不了就返回新结构。"""
+    if isinstance(node, dict):
+        return {
+            k: (v.lstrip("/") if k in _LOCAL_URL_FIELDS
+                and isinstance(v, str) and v.startswith("/") and not v.startswith("//")
+                else _relativize_local_urls(v))
+            for k, v in node.items()
+        }
+    if isinstance(node, list):
+        return [_relativize_local_urls(x) for x in node]
+    return node
+
+
+def render_pages(dist: Path, snap: dict, site_url: str, build_stamp: str = "") -> list[str]:
     written = []
+
+    # 站内绝对路径改成相对路径，否则子路径部署（GitHub Pages）下音频/头像全 404
+    snap = _relativize_local_urls(snap)
 
     for name in PAGES:
         src = assets.STATIC_DIR / name
@@ -96,6 +124,8 @@ def render_pages(dist: Path, snap: dict, site_url: str) -> list[str]:
         html = src.read_text(encoding="utf-8")
 
         payload = _inline_script("__SITE_DATA__", snap)
+        if build_stamp:
+            payload += _inline_script("__BUILD_STAMP__", build_stamp)
 
         # 放在 </head> 前，保证业务脚本执行时数据已经就位
         if "</head>" in html:
@@ -257,6 +287,24 @@ def write_seo(dist: Path, site_url: str, pages: list[str]) -> None:
     (dist / ".nojekyll").write_text("", encoding="utf-8")
 
 
+def write_build_stamp(dist: Path) -> str:
+    """写一份 build.json 记录本次导出的时间戳。
+
+    为什么要它：GitHub Pages 对 HTML 固定发 `Cache-Control: max-age=600`，
+    也就是改完内容后老访客最多 10 分钟看不到新版，而且**没法从 HTML 自己判断
+    手上的这份是不是旧的**。有了这个文件，页面启动时拉一次（它只有几十字节，
+    也不进浏览器的长缓存），对不上就说明本地是旧版，可以给用户一个提示。
+    """
+    from datetime import datetime, timezone
+
+    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    (dist / "build.json").write_text(
+        json.dumps({"built_at": stamp}, separators=(",", ":")),
+        encoding="utf-8",
+    )
+    return stamp
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="导出静态站点供 GitHub Pages 使用")
     parser.add_argument("--out", default="dist", help="输出目录，默认 dist")
@@ -287,8 +335,10 @@ def main() -> None:
     files = copy_assets(dist)
     print(f"  静态资源：{files} 个文件")
 
-    pages = render_pages(dist, snap, args.site_url)
+    stamp_utc = write_build_stamp(dist)
+    pages = render_pages(dist, snap, args.site_url, stamp_utc)
     print(f"  页面：{', '.join(pages)} + 404.html")
+    print(f"  构建标记：build.json @ {stamp_utc}")
 
     write_seo(dist, args.site_url, pages)
     total = sum(1 for _ in dist.rglob("*") if _.is_file())

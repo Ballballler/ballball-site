@@ -48,29 +48,32 @@ DATA_DIR = BASE_DIR / "data"
 BACKUP_DIR = BASE_DIR / "backup"
 
 DESKTOP = Path(r"C:\Users\96281\Desktop")
-
-# 抽好的音轨（自在.mp4 → 自在.mp3）放在这里
-PREPARED_MP3 = BASE_DIR / "backup" / "uploads-2026-09-27" / "自在.mp3"
+DOWNLOADS = Path(r"C:\Users\96281\Downloads")
 
 # 两个作品的定义。名字由长青依据文件名 / 音频内容拟定。
+#
+# 关于《自在》的源：桌面上那个是抖音的竖屏片段（自在.mp4，只有 15 秒），
+# 从视频里抽音轨属于二次压缩，音质和长度都不行。完整的音频在下载夹里
+# （自在.mp3，2:44，192kbps），直接用这个。
 WORKS: list[dict] = [
     {
         "title": "自在",
         "kind": "music",
         "status": "demo",
-        "summary": "翻唱 / 音轨留存 —— 抖音片段《自在》(原唱 子青)，15 秒竖屏试听。",
+        "summary": "完整版 · 2 分 44 秒 —— 「night down i wanna break it down」。",
         "notes": (
-            "从抖音上存下来的《自在》片段，只保留了 15 秒的副歌。\n"
-            "原曲是子青的《自在》，歌词里那句 night down i wanna break it down 挺抓人。\n"
-            "存这里当练习参考 —— 它的气声处理和鼓组留白很值得拆。"
+            "完整版留档，2 分 44 秒。\n"
+            "歌名《自在》，歌词里那句 night down i wanna break it down 挺抓人。\n"
+            "存这里当练习参考 —— 它的气声处理和鼓组留白很值得拆。\n"
+            "（桌面上还有个抖音的 15 秒竖屏片段，那个是从视频里截的，音质差，没采用。）"
         ),
-        "tags": ["翻唱", "情绪流行", "短片段"],
+        "tags": ["情绪流行", "完整版", "气声"],
         "bpm": 0,
         "key_signature": "",
         "category_slug": "纯音乐",
-        "progress": 30,
+        "progress": 60,
         "allow_download": True,
-        "source": PREPARED_MP3,
+        "source": DOWNLOADS / "自在.mp3",
     },
     {
         "title": "反复的雨",
@@ -80,7 +83,7 @@ WORKS: list[dict] = [
         "notes": (
             "一段氛围底子，2 分 44 秒，全程没有明显的鼓点，靠一层层叠的合成器往前推。\n"
             "波形看下来几乎没有静音断点，像雨一直下、像走廊尽头那盏灯没关。\n"
-            "本来想把它接到《凌晨三点的走廊》里当引子，先单独存一份。"
+            "本来想把它当引子接进另一首里，先单独存一份。"
         ),
         "tags": ["氛围", "暗色", "无人声"],
         "bpm": 0,
@@ -232,9 +235,36 @@ def main() -> int:
         else:
             db.commit()
             print(f"\n完成：作品表 {db.query(M.Work).count()} 条")
+
+        # 5) 清理孤儿音频：换过源的旧文件留在 uploads 里没人引用，
+        #    不清掉的话 pages.sh 会一直把它们推到线上（白占体积）。
+        if not dry:
+            purge_orphan_audio(db)
     finally:
         db.close()
     return 0
+
+
+def purge_orphan_audio(db) -> None:
+    """删掉 uploads 里没有任何 work 引用的音频文件。
+
+    只碰 uploads 目录，且只删音频扩展名 —— 图片、字体这些一律不动。
+    """
+    referenced = {
+        Path(u).name
+        for (u,) in db.query(M.Work.audio_url).all()
+        if u
+    }
+    removed = 0
+    for f in sorted(UPLOAD_DIR.rglob("*")):
+        if not f.is_file() or f.suffix.lower() not in ALLOWED_AUDIO_EXT:
+            continue
+        if f.name not in referenced:
+            f.unlink()
+            removed += 1
+            print(f"[5/5] 清掉没人引用的音频 {f.relative_to(UPLOAD_DIR.parent)}")
+    if not removed:
+        print("[5/5] 没有孤儿音频")
 
 
 if __name__ == "__main__":
