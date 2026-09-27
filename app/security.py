@@ -1,4 +1,4 @@
-"""口令散列、会话签名、访客标识。
+"""口令散列、会话签名。
 
 不引入 passlib / jwt 这类额外依赖：
 - 口令用标准库 pbkdf2_hmac(salt 随机, 200k 轮)；
@@ -13,7 +13,6 @@ import json
 import os
 import secrets
 import time
-from pathlib import Path
 
 from .config import (
     DATA_DIR,
@@ -24,9 +23,6 @@ from .config import (
 
 ADMIN_FILE = DATA_DIR / "admin.json"
 PBKDF2_ROUNDS = 200_000
-
-# 部署在 nginx 之后时需要读 X-Forwarded-For，否则所有人都是 127.0.0.1
-TRUST_PROXY = os.getenv("TRUST_PROXY", "1") not in ("0", "false", "False")
 
 
 # ------------------------------ 口令 ------------------------------
@@ -90,6 +86,20 @@ def check_admin_password(password: str) -> bool:
     return verify_password(password, data.get("password_hash", ""))
 
 
+def using_default_password(default_password: str) -> bool:
+    """后台是否还在用初始口令。
+
+    不能只看「环境变量里有没有配 ADMIN_PASSWORD」——口令可以在后台改，
+    改完写进 admin.json，环境变量依旧是空的。所以直接拿默认口令去验散列，
+    验得过说明确实还没改，验不过说明已经改掉了。
+    """
+    data = _read_admin()
+    stored = data.get("password_hash", "")
+    if not stored:
+        return True
+    return verify_password(default_password, stored)
+
+
 def set_admin_password(new_password: str) -> None:
     data = _read_admin()
     data["password_hash"] = hash_password(new_password)
@@ -123,22 +133,3 @@ def verify_session_token(token: str | None) -> bool:
         return int(exp) > time.time()
     except ValueError:
         return False
-
-
-# ------------------------------ 访客标识 ------------------------------
-
-
-def client_ip(headers: dict, client_host: str | None) -> str:
-    if TRUST_PROXY:
-        xff = headers.get("x-forwarded-for", "")
-        if xff:
-            return xff.split(",")[0].strip()
-        real = headers.get("x-real-ip", "")
-        if real:
-            return real.strip()
-    return client_host or "unknown"
-
-
-def ip_hash(ip: str) -> str:
-    """只存哈希：既能限流与识别同一访客，又不落明文 IP。"""
-    return hashlib.sha256(f"{ip}|{SECRET_KEY}".encode()).hexdigest()[:32]

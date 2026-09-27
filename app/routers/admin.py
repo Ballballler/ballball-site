@@ -15,18 +15,15 @@ from ..config import (
     ADMIN_PASSWORD,
     ALLOWED_AUDIO_EXT,
     ALLOWED_IMAGE_EXT,
-    COMMENT_MODERATION,
     MAX_AUDIO_BYTES,
     MAX_UPLOAD_BYTES,
     SESSION_COOKIE_NAME,
     SESSION_TTL_SECONDS,
     UPLOAD_DIR,
-    USING_DEFAULT_PASSWORD,
 )
 from ..database import SessionLocal
 from ..models import (
     Category,
-    Comment,
     Interest,
     JourneyStep,
     Movie,
@@ -43,12 +40,12 @@ from ..security import (
     create_session_token,
     ensure_admin_password,
     set_admin_password,
+    using_default_password,
 )
 from ..schemas import (
     CategoryCreate,
     CategoryOut,
     CategoryUpdate,
-    CommentOut,
     InterestCreate,
     InterestOut,
     InterestUpdate,
@@ -123,7 +120,7 @@ def logout(response: Response) -> OkOut:
 
 @router.get("/session")
 def session(_: bool = require_admin) -> dict:
-    return {"ok": True, "using_default_password": USING_DEFAULT_PASSWORD}
+    return {"ok": True, "using_default_password": using_default_password(ADMIN_PASSWORD)}
 
 
 @router.post("/password", response_model=OkOut)
@@ -139,11 +136,6 @@ def stats(_: bool = require_admin) -> StatsOut:
     with SessionLocal() as db:
         movies = db.query(Movie).count()
         works = db.query(Work).count()
-        comments = db.query(Comment).count()
-        hidden = db.query(Comment).filter(Comment.hidden.is_(True)).count()
-        pending = db.query(Comment).filter(
-            Comment.hidden.is_(True), Comment.reviewed.is_(False)
-        ).count()
         cats = db.query(Category).count()
         interests = db.query(Interest).count()
         resume_items = db.query(ResumeItem).count()
@@ -153,16 +145,12 @@ def stats(_: bool = require_admin) -> StatsOut:
     return StatsOut(
         movies=movies,
         works=works,
-        comments=comments,
-        hidden_comments=hidden,
-        pending_comments=pending,
-        comment_moderation=COMMENT_MODERATION,
         categories=cats,
         interests=interests,
         resume_items=resume_items,
         skills=skills,
         avg_rating=avg,
-        using_default_password=USING_DEFAULT_PASSWORD,
+        using_default_password=using_default_password(ADMIN_PASSWORD),
     )
 
 
@@ -409,13 +397,9 @@ def delete_movie(item_id: int, _: bool = require_admin) -> OkOut:
         item = db.get(Movie, item_id)
         if item is None:
             raise HTTPException(status_code=404, detail="电影不存在")
-        # 连带清理该电影下的评论，避免留下孤儿数据
-        db.query(Comment).filter(
-            Comment.target_type == "movie", Comment.target_id == item_id
-        ).delete()
         db.delete(item)
         db.commit()
-        return OkOut(message="已删除该电影及其评论")
+        return OkOut(message="已删除该电影")
 
 
 # --------------------------- 成长路径 ---------------------------
@@ -592,12 +576,9 @@ def delete_work(item_id: int, _: bool = require_admin) -> OkOut:
         item = db.get(Work, item_id)
         if item is None:
             raise HTTPException(status_code=404, detail="作品不存在")
-        db.query(Comment).filter(
-            Comment.target_type == "work", Comment.target_id == item_id
-        ).delete()
         db.delete(item)
         db.commit()
-        return OkOut(message="已删除该作品及其评论")
+        return OkOut(message="已删除该作品")
 
 
 # ------------------------------ Resume ------------------------------
@@ -690,113 +671,6 @@ def delete_skill(item_id: int, _: bool = require_admin) -> OkOut:
         db.delete(item)
         db.commit()
         return OkOut(message="已删除")
-
-
-# ------------------------------ Comment ------------------------------
-
-
-def _fill_target_titles(db, comments: list[Comment]) -> None:
-    """把 target_type + target_id 翻译成人能看懂的标题。
-
-    后台列表里只显示「电影 #3」的话，站长根本不知道是哪条，无从判断该不该放行。
-    """
-    titles: dict[tuple[str, int], str] = {}
-    for c in comments:
-        key = (c.target_type, c.target_id)
-        if key in titles:
-            continue
-        if c.target_type == "movie":
-            obj = db.get(Movie, c.target_id)
-        elif c.target_type == "work":
-            obj = db.get(Work, c.target_id)
-        elif c.target_type == "profile":
-            obj = db.get(Profile, c.target_id)
-        else:
-            obj = None
-        if obj is None:
-            titles[key] = "主页留言" if c.target_type == "profile" else "（原内容已删除）"
-        else:
-            titles[key] = getattr(obj, "title", None) or getattr(obj, "name", None) or "—"
-    for c in comments:
-        # 非映射属性，只用于序列化，不会写库
-        c.target_title = titles.get((c.target_type, c.target_id))
-
-
-@router.get("/comments", response_model=list[CommentOut])
-def admin_list_comments(
-    _: bool = require_admin,
-    target_type: str | None = None,
-    status: str = "all",
-    limit: int = 300,
-) -> list[Comment]:
-    """status: all / pending（待审核）/ hidden（已隐藏）/ visible（已公开）"""
-    with SessionLocal() as db:
-        query = db.query(Comment)
-        if target_type:
-            query = query.filter(Comment.target_type == target_type)
-        if status == "pending":
-            query = query.filter(Comment.hidden.is_(True), Comment.reviewed.is_(False))
-        elif status == "hidden":
-            query = query.filter(Comment.hidden.is_(True), Comment.reviewed.is_(True))
-        elif status == "visible":
-            query = query.filter(Comment.hidden.is_(False))
-        rows = list(query.order_by(Comment.created_at.desc()).limit(min(limit, 1000)))
-        _fill_target_titles(db, rows)
-        return rows
-
-
-@router.patch("/comments/{item_id}/approve", response_model=CommentOut)
-def approve_comment(item_id: int, _: bool = require_admin) -> Comment:
-    """通过一条评论（公开显示）。"""
-    with SessionLocal() as db:
-        item = db.get(Comment, item_id)
-        if item is None:
-            raise HTTPException(status_code=404, detail="评论不存在")
-        item.hidden = False
-        item.reviewed = True
-        db.commit()
-        db.refresh(item)
-        _fill_target_titles(db, [item])
-        return item
-
-
-@router.post("/comments/approve-all", response_model=OkOut)
-def approve_all_comments(_: bool = require_admin) -> OkOut:
-    """把当前所有待审核评论一次性放行。"""
-    with SessionLocal() as db:
-        count = (
-            db.query(Comment)
-            .filter(Comment.hidden.is_(True), Comment.reviewed.is_(False))
-            .update({Comment.hidden: False, Comment.reviewed: True})
-        )
-        db.commit()
-    return OkOut(message=f"已通过 {count} 条评论" if count else "没有待审核的评论")
-
-
-@router.patch("/comments/{item_id}/hide", response_model=CommentOut)
-def toggle_comment_hidden(item_id: int, _: bool = require_admin) -> Comment:
-    with SessionLocal() as db:
-        item = db.get(Comment, item_id)
-        if item is None:
-            raise HTTPException(status_code=404, detail="评论不存在")
-        item.hidden = not item.hidden
-        # 站长动过的都算已处理，不再出现在「待审核」里
-        item.reviewed = True
-        db.commit()
-        db.refresh(item)
-        _fill_target_titles(db, [item])
-        return item
-
-
-@router.delete("/comments/{item_id}", response_model=OkOut)
-def delete_comment(item_id: int, _: bool = require_admin) -> OkOut:
-    with SessionLocal() as db:
-        item = db.get(Comment, item_id)
-        if item is None:
-            raise HTTPException(status_code=404, detail="评论不存在")
-        db.delete(item)
-        db.commit()
-        return OkOut(message="评论已删除")
 
 
 # ------------------------------ 图片上传 ------------------------------

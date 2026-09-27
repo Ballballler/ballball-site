@@ -246,7 +246,7 @@ function renderResumePreview() {
           ])
         )
       )
-    : el("p", { class: "empty", text: "还没写成长路径。去后台加第一步。" });
+    : el("p", { class: "empty", text: "还没写成长路径。" });
 
   // 在岗的排前面，其余按开始时间倒序
   const recent = [...state.resume]

@@ -10,13 +10,13 @@ GitHub Pages **只分发静态文件**。它不会运行 Python，也没有数�
 | 浏览首页 / 电影 / 音乐 / 简历 | ✅ | ✅ 正常渲染 |
 | 详情弹层、深链 `#movie-3` | ✅ | ✅ 正常 |
 | 3D 技能球、唱片旋转 | ✅ | ✅ 正常 |
-| 后台登录 `/admin.html` | ✅ | ❌ **没有**（导出时故意不包含） |
-| 在线发评论 / 上传图片 | ✅ | ❌ 换成 Giscus（见下） |
+| 后台登录 `/admin.html` | ✅ | ❌ **没有**（导出时故意不包含，前台也不放入口） |
+| 在线发评论 / 上传图片 | — | — 评论功能已整体移除 |
 | 后台增删改查内容 | ✅ | ❌ 改完要本地重新导出 |
 
 所以 Pages 版本的定位是：**一个只读的公开展示版**。要改内容，在本地改完重新导出。
 
-> 想要完整能力（后台 + 评论 + 数据库），还是得有一台自己的服务器，
+> 想要完整能力（后台 + 数据库），还是得有一台自己的服务器，
 > 看 `deploy/README.md`（systemd + nginx + HTTPS 那套）。两者不冲突：
 > 服务器跑动态全功能版，Pages 跑公开静态版。
 
@@ -138,33 +138,6 @@ yourdomain.com   CNAME   ballballler.github.io
 
 ---
 
-## 评论区：接 Giscus
-
-静态站写不了数据库，评论交给 [Giscus](https://giscus.app) ——
-它把评论存在你的 GitHub Discussions 里，访客用 GitHub 账号发言，不需要服务器。
-
-配置一次即可：
-
-1. 仓库 → Settings → **勾选 Discussions**
-2. 打开 https://giscus.app 装一下 App（授权给这个仓库即可）
-3. 在 giscus.app 页面填仓库名，让它给出 `data-repo-id` 和 `data-category-id`
-4. 导出时把这几个值传进环境变量
-
-```bash
-export GISCUS_REPO="Ballballler/ballball-site"
-export GISCUS_REPO_ID="R_xxxxxxxxxx"
-export GISCUS_CATEGORY="Announcements"
-export GISCUS_CATEGORY_ID="DIC_xxxxxxxxxx"
-./deploy/pages.sh
-```
-
-Windows 的话在 `deploy\pages.bat` 同一目录建个 `pages-env.bat` 先 set 好这几个变量，
-或者在命令行里先 `set GISCUS_REPO=...` 再跑。
-
-没配置也不影响上线 —— 评论区会显示一句「这是静态导出的只读版本」，历史评论照常展示。
-
----
-
 ## 日常更新流程
 
 1. 本地起服务：`.venv\Scripts\python.exe run.py --port 8800`
@@ -181,9 +154,8 @@ Windows 的话在 `deploy\pages.bat` 同一目录建个 `pages-env.bat` 先 set 
 - [ ] 点卡片能弹出详情（居中、有关闭按钮）
 - [ ] 简历页时间轴、技能球正常
 - [ ] `sitemap.xml` 里的域名是你自己的
-- [ ] `https://…/admin.html` 返回 404（后台没被传上去）
+- [ ] `https://…/admin.html` 是说明页、带 noindex（后台没被传上去）
 - [ ] 在仓库源码里搜不到 `admin.json` / `site.db`（`git log -p -- .gitignore` 之外）
-- [ ] Giscus 配置好之后，评论区能加载出发言框
 
 ## 回滚
 

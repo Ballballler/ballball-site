@@ -1,6 +1,6 @@
 /* ========================================================================
    admin.js —— 管理后台
-   登录 / 统计概览 / 关于我 / 兴趣爱好 / 电影 / 作品 / 分类 / 评论 / 改口令
+   登录 / 统计概览 / 关于我 / 兴趣爱好 / 电影 / 作品 / 分类 / 改口令
    资源类模块由 RESOURCES 配置驱动，表格与表单自动生成
    ===================================================================== */
 
@@ -9,7 +9,6 @@ const state = {
   categories: [],
   stats: null,
   active: "overview",
-  commentFilter: "all",
 };
 
 /* --------------------------- 资源定义 --------------------------- */
@@ -55,7 +54,7 @@ const RESOURCES = {
 
   movies: {
     title: "恐怖电影",
-    desc: "评分、长评、恐怖强度都在这里维护。删掉一部电影会连带删掉它下面的评论。",
+    desc: "评分、长评、恐怖强度都在这里维护。",
     icon: "🎬",
     endpoint: "/api/admin/movies",
     newLabel: "新增电影",
@@ -504,7 +503,6 @@ const TABS = [
   { key: "works", icon: "🎧", label: "作品" },
   { key: "categories", icon: "🏷️", label: "分类" },
   { key: "sections", icon: "🧱", label: "页面区块" },
-  { key: "comments", icon: "💬", label: "评论" },
   { key: "password", icon: "🔒", label: "改口令" },
 ];
 
@@ -523,19 +521,10 @@ function renderSide() {
         works: state.stats.works,
         categories: state.stats.categories,
         interests: state.stats.interests,
-        comments: state.stats.comments,
         resume: state.stats.resume_items,
         skills: state.stats.skills,
       };
-      if (t.key === "comments" && state.stats.pending_comments) {
-        // 有待审的先把「待审」顶上来，比总数更该被看见
-        btn.appendChild(
-          el("span", {
-            class: "side__badge side__badge--warn",
-            text: `${state.stats.pending_comments} 待审`,
-          })
-        );
-      } else if (map[t.key] !== undefined) {
+      if (map[t.key] !== undefined) {
         btn.appendChild(el("span", { class: "side__badge", text: String(map[t.key]) }));
       }
     }
@@ -1282,28 +1271,6 @@ function renderOverview() {
     );
   }
 
-  if (s.pending_comments) {
-    const tip = el("div", { class: "alert alert--click", tabindex: "0", role: "button" }, [
-      el("span", { text: "💬" }),
-      el("div", {}, [
-        el("b", { text: `${s.pending_comments} 条评论等你审核` }),
-        el("span", { text: "点这里去处理，通过之后前台才会显示。" }),
-      ]),
-    ]);
-    tip.addEventListener("click", () => {
-      state.active = "comments";
-      renderSide();
-      renderComments();
-    });
-    tip.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        tip.click();
-      }
-    });
-    pane.appendChild(tip);
-  }
-
   const grid = el("div", { class: "stat-grid" });
   [
     { num: s.movies ?? 0, label: "电影" },
@@ -1312,8 +1279,6 @@ function renderOverview() {
     { num: s.categories ?? 0, label: "分类" },
     { num: s.resume_items ?? 0, label: "简历条目" },
     { num: s.skills ?? 0, label: "技能" },
-    { num: s.comments ?? 0, label: "评论" },
-    { num: s.pending_comments ?? 0, label: "待审核" },
     { num: s.avg_rating ?? 0, label: "平均评分" },
   ].forEach((it) => {
     grid.appendChild(
@@ -1448,198 +1413,6 @@ async function renderProfile() {
   pane.appendChild(form);
 }
 
-/* --------------------------- 评论管理 --------------------------- */
-
-const COMMENT_FILTERS = [
-  { key: "all", label: "全部" },
-  { key: "pending", label: "待审核" },
-  { key: "visible", label: "已公开" },
-  { key: "hidden", label: "已隐藏" },
-];
-
-const TARGET_LABEL = { movie: "电影", work: "作品", profile: "主页" };
-
-// 未隐藏 = 已公开；隐藏且站长没动过 = 待审核；隐藏且处理过 = 主动隐藏
-function commentStatus(c) {
-  if (!c.hidden) return { text: "已公开", cls: "tag-pill--ok" };
-  return c.reviewed
-    ? { text: "已隐藏", cls: "tag-pill--muted" }
-    : { text: "待审核", cls: "tag-pill--warn" };
-}
-
-async function renderComments() {
-  const pane = document.getElementById("pane");
-  pane.textContent = "";
-
-  const moderating = !!(state.stats && state.stats.comment_moderation);
-  const approveAllBtn = el("button", {
-    class: "btn btn--sm",
-    type: "button",
-    text: "全部通过",
-  });
-
-  pane.appendChild(
-    el("div", { class: "pane__head" }, [
-      el("div", {}, [
-        el("div", { class: "pane__title", text: "评论" }),
-        el("div", {
-          class: "pane__desc",
-          text: moderating
-            ? "当前是「先审后发」：新留言要你点「通过」才会公开。"
-            : "当前是「即发即显」。想改成先审后发，在 .env 里设 COMMENT_MODERATION=1 后重启。",
-        }),
-      ]),
-      el("div", { class: "table__actions" }, [approveAllBtn]),
-    ])
-  );
-
-  const filterBar = el("div", { class: "filter-bar" });
-  COMMENT_FILTERS.forEach((f) => {
-    const btn = el("button", {
-      class: "chip-btn" + (state.commentFilter === f.key ? " is-active" : ""),
-      type: "button",
-      text: f.label,
-    });
-    btn.addEventListener("click", () => {
-      state.commentFilter = f.key;
-      renderComments();
-    });
-    filterBar.appendChild(btn);
-  });
-  pane.appendChild(filterBar);
-
-  approveAllBtn.addEventListener("click", async () => {
-    if (!confirm("把当前所有待审核评论一次性公开？")) return;
-    try {
-      const res = await API.post("/api/admin/comments/approve-all", {});
-      toast(res.message);
-      await loadStats();
-      renderSide();
-      renderComments();
-    } catch (err) {
-      toast(err.message, "err");
-    }
-  });
-
-  const wrap = el("div", { class: "table-wrap" }, [el("p", { class: "empty", text: "加载中…" })]);
-  pane.appendChild(wrap);
-
-  let rows = [];
-  try {
-    rows = await API.get(`/api/admin/comments?status=${state.commentFilter}`);
-  } catch (err) {
-    wrap.textContent = "";
-    wrap.appendChild(el("p", { class: "empty", text: `加载失败：${err.message}` }));
-    return;
-  }
-
-  wrap.textContent = "";
-  if (!rows.length) {
-    wrap.appendChild(
-      el("p", {
-        class: "empty",
-        text:
-          state.commentFilter === "pending"
-            ? "没有待审核的评论。"
-            : state.commentFilter === "hidden"
-            ? "没有被隐藏的评论。"
-            : "还没有人留言。",
-      })
-    );
-    return;
-  }
-
-  const table = el("table", { class: "table" });
-  const thead = el("thead");
-  const tr = el("tr");
-  ["状态", "昵称", "内容", "留言位置", "时间", "操作"].forEach((t) =>
-    tr.appendChild(el("th", { text: t }))
-  );
-  thead.appendChild(tr);
-  table.appendChild(thead);
-
-  const tbody = el("tbody");
-
-  rows.forEach((c) => {
-    const line = el("tr", { class: c.hidden ? "row-hidden" : "" });
-    const status = commentStatus(c);
-    line.appendChild(
-      el("td", {}, [el("span", { class: `tag-pill ${status.cls}`, text: status.text })])
-    );
-    line.appendChild(el("td", { text: c.nickname }));
-    line.appendChild(el("td", { class: "cell-clip", text: c.content }));
-    line.appendChild(
-      el("td", {
-        text: `${TARGET_LABEL[c.target_type] || c.target_type} · ${
-          c.target_title || `#${c.target_id}`
-        }`,
-      })
-    );
-    line.appendChild(el("td", { text: fmtDate(c.created_at) }));
-
-    const approveBtn = el("button", {
-      class: "btn btn--sm btn--ok",
-      type: "button",
-      text: "通过",
-    });
-    const hideBtn = el("button", {
-      class: "btn btn--sm",
-      type: "button",
-      text: c.hidden ? "恢复" : "隐藏",
-    });
-    const delBtn = el("button", { class: "btn btn--sm btn--rose", type: "button", text: "删除" });
-
-    approveBtn.addEventListener("click", async () => {
-      try {
-        const updated = await API.patch(`/api/admin/comments/${c.id}/approve`);
-        c.hidden = updated.hidden;
-        c.reviewed = updated.reviewed;
-        toast("已通过，现在前台能看到了");
-        await loadStats();
-        renderSide();
-        renderComments();
-      } catch (err) {
-        toast(err.message, "err");
-      }
-    });
-
-    hideBtn.addEventListener("click", async () => {
-      try {
-        const updated = await API.patch(`/api/admin/comments/${c.id}/hide`);
-        c.hidden = updated.hidden;
-        c.reviewed = updated.reviewed;
-        toast(c.hidden ? "已隐藏" : "已恢复显示");
-        await loadStats();
-        renderSide();
-        renderComments();
-      } catch (err) {
-        toast(err.message, "err");
-      }
-    });
-
-    delBtn.addEventListener("click", async () => {
-      if (!confirm("确定删除这条评论？此操作不可撤销。")) return;
-      try {
-        await API.del(`/api/admin/comments/${c.id}`);
-        toast("已删除");
-        await loadStats();
-        renderSide();
-        renderComments();
-      } catch (err) {
-        toast(err.message, "err");
-      }
-    });
-
-    const buttons = [approveBtn, hideBtn, delBtn];
-    if (!c.hidden && c.reviewed) buttons.splice(0, 1); // 已公开的不需要「通过」
-
-    line.appendChild(el("td", {}, [el("div", { class: "table__actions" }, buttons)]));
-    tbody.appendChild(line);
-  });
-  table.appendChild(tbody);
-  wrap.appendChild(table);
-}
-
 /* --------------------------- 改口令 --------------------------- */
 
 function renderPassword() {
@@ -1702,7 +1475,6 @@ function renderPassword() {
 function renderPane(key) {
   if (key === "overview") return renderOverview();
   if (key === "profile") return renderProfile();
-  if (key === "comments") return renderComments();
   if (key === "password") return renderPassword();
   if (RESOURCES[key]) return renderResource(key);
   return renderOverview();

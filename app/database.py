@@ -50,7 +50,6 @@ def get_db() -> Generator[Session, None, None]:
 # 后加的列。create_all 只建表、不补列，已有库要靠这里升级。
 # 值：表名 -> {列名: 列定义}。SQLite 的 ADD COLUMN 必须带默认值。
 _EXTRA_COLUMNS: dict[str, dict[str, str]] = {
-    "comment": {"reviewed": "BOOLEAN DEFAULT 0 NOT NULL"},
     # 电影：TMDB 元数据。只存图片相对路径与文本，不落图片文件，磁盘占用为 0。
     "movie": {
         "tmdb_id": "INTEGER",

@@ -1,13 +1,13 @@
 @echo off
-chcp 65001 >nul
+REM ±àÂë£ºGB18030 + CRLF£¨cmd Ô­Éú¶Á ANSI£¬´æ UTF-8 »òÖ»ÓÃ LF ¶¼»á³öÎÊÌâ£©
 REM ============================================================
-REM  æŠŠç«™ç‚¹å¯¼å‡ºæˆé™æ€ç«™å¹¶æ¨é€åˆ° gh-pages åˆ†æ”¯ï¼ˆWindows ç‰ˆï¼‰
+REM  °ÑÕ¾µãµ¼³ö³É¾²Ì¬Õ¾²¢ÍÆËÍµ½ gh-pages ·ÖÖ§£¨Windows °æ£©
 REM
-REM  ä¸ºä»€ä¹ˆå¿…é¡»æœ¬åœ°å¯¼å‡ºï¼šGitHub Pages ä¸ä¼šè¿è¡Œ Pythonï¼Œ
-REM  Action é‡Œä¹Ÿæ²¡æœ‰ä½ çš„æ•°æ®åº“ï¼ˆdata/site.db ä¸è¯¥è¿›ä»“åº“ï¼‰ã€‚
-REM  æ‰€ä»¥å†…å®¹æ˜¯æœ¬åœ°æ‹å¿«ç…§ã€äº§ç‰©æ¨ä¸Šå»ã€‚
+REM  ÎªÊ²Ã´±ØĞë±¾µØµ¼³ö£ºGitHub Pages ²»»áÔËĞĞ Python£¬
+REM  Action ÀïÒ²Ã»ÓĞÄãµÄÊı¾İ¿â£¨data/site.db ²»¸Ã½ø²Ö¿â£©¡£
+REM  ËùÒÔÄÚÈİÊÇ±¾µØÅÄ¿ìÕÕ¡¢²úÎïÍÆÉÏÈ¥¡£
 REM
-REM  ç”¨æ³•ï¼šåŒå‡»å³å¯ï¼Œæˆ–åœ¨å‘½ä»¤è¡Œé‡Œè·‘ deploy\pages.bat
+REM  ÓÃ·¨£ºË«»÷¼´¿É£¬»òÔÚÃüÁîĞĞÀïÅÜ deploy\pages.bat
 REM ============================================================
 setlocal
 cd /d "%~dp0\.."
@@ -16,11 +16,11 @@ set REMOTE=origin
 set BRANCH=gh-pages
 if "%SITE_URL%"=="" set SITE_URL=https://ballballler.github.io/ballball-site
 
-echo ==^> 1/3 å¯¼å‡ºé™æ€ç«™
+echo ==^> 1/3 µ¼³ö¾²Ì¬Õ¾
 ".venv\Scripts\python.exe" tools\export_static.py --out dist --site-url "%SITE_URL%"
 if errorlevel 1 goto :fail
 
-echo ==^> 2/3 ç»„è£… gh-pages åˆ†æ”¯
+echo ==^> 2/3 ×é×° gh-pages ·ÖÖ§
 set "TMP=%TEMP%\ballball-pages-%RANDOM%"
 if exist "%TMP%" rmdir /s /q "%TMP%"
 mkdir "%TMP%"
@@ -30,13 +30,13 @@ pushd "%TMP%"
 git init -q
 git checkout -q -b %BRANCH%
 git add -A
-git -c user.name=Ballballler -c user.email=Ballballler@users.noreply.github.com commit -q -m "publish: é™æ€ç«™å¿«ç…§"
+git -c user.name=Ballballler -c user.email=Ballballler@users.noreply.github.com commit -q -m "publish: ¾²Ì¬Õ¾¿ìÕÕ"
 if errorlevel 1 (
   popd
   goto :fail
 )
 
-echo ==^> 3/3 æ¨é€åˆ° %REMOTE% çš„ %BRANCH%
+echo ==^> 3/3 ÍÆËÍµ½ %REMOTE% µÄ %BRANCH%
 git push --force %REMOTE% %BRANCH%
 set RC=%ERRORLEVEL%
 popd
@@ -45,23 +45,23 @@ rmdir /s /q "%TMP%"
 if not "%RC%"=="0" goto :fail
 
 echo.
-echo æ¨é€å®Œæˆã€‚ç¬¬ä¸€æ¬¡éƒ¨ç½²è¿˜éœ€è¦æœ€åä¸€æ­¥ï¼š
-echo   GitHub ä»“åº“ -^> Settings -^> Pages -^> Build and deployment
-echo   Source é€‰ã€ŒDeploy from a branchã€
-echo   Branch é€‰ gh-pagesã€ç›®å½•é€‰ / (root) -^> Save
+echo ÍÆËÍÍê³É¡£µÚÒ»´Î²¿Êğ»¹ĞèÒª×îºóÒ»²½£º
+echo   GitHub ²Ö¿â -^> Settings -^> Pages -^> Build and deployment
+echo   Source Ñ¡¡¸Deploy from a branch¡¹
+echo   Branch Ñ¡ gh-pages¡¢Ä¿Â¼Ñ¡ / (root) -^> Save
 echo.
-echo ä¸€ä¸¤åˆ†é’Ÿåå°±èƒ½åœ¨ %SITE_URL% æ‰“å¼€ã€‚
-echo ä¹‹åæ”¹å†…å®¹é‡è·‘è¿™ä¸ª bat å³å¯ã€‚
+echo Ò»Á½·ÖÖÓºó¾ÍÄÜÔÚ %SITE_URL% ´ò¿ª¡£
+echo Ö®ºó¸ÄÄÚÈİÖØÅÜÕâ¸ö bat ¼´¿É¡£
 echo.
 pause
 exit /b 0
 
 :fail
 echo.
-echo å¤±è´¥äº†ã€‚å¸¸è§é—®é¢˜ï¼š
-echo   1. è¿˜æ²¡ git remote add origin git@github.com:Ballballler/ballball-site.git
-echo   2. SSH key æ²¡åŠ åˆ° GitHubï¼šssh -T git@github.com åº”è¯¥å› Hi Ballballler!
-echo   3. ä»“åº“è¿˜æ²¡å»ºï¼šå» https://github.com/new å»ºä¸€ä¸ª
+echo Ê§°ÜÁË¡£³£¼ûÎÊÌâ£º
+echo   1. »¹Ã» git remote add origin git@github.com:Ballballler/ballball-site.git
+echo   2. SSH key Ã»¼Óµ½ GitHub£ºssh -T git@github.com Ó¦¸Ã»Ø Hi Ballballler!
+echo   3. ²Ö¿â»¹Ã»½¨£ºÈ¥ https://github.com/new ½¨Ò»¸ö
 echo.
 pause
 exit /b 1

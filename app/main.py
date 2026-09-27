@@ -8,16 +8,17 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from .assets import render_page
-from .config import APP_ENV, SITE_URL, STATIC_DIR, USING_DEFAULT_PASSWORD
+from .config import ADMIN_PASSWORD, APP_ENV, SITE_URL, STATIC_DIR
 from .database import Base, engine, ensure_extra_columns, SessionLocal
 from .models import Movie, Work
-from .routers import admin, comments, public
+from .routers import admin, public
 from .seed import seed_if_empty
 from . import tmdb
+from .security import using_default_password
 
 app = FastAPI(
     title="Ballball 的主页",
-    description="个人主页 + 恐怖电影档案 + 音乐构思 + 访客评论区",
+    description="个人主页 + 恐怖电影档案 + 音乐构思",
     version="1.1.0",
     # 生产环境关闭交互式文档，减少暴露面
     docs_url=None if APP_ENV == "production" else "/api/docs",
@@ -54,7 +55,7 @@ async def on_startup() -> None:
     else:
         print("[TMDB] 未配置 TMDB_API_KEY，后台的「从 TMDB 导入」暂不可用（手动建档不受影响）")
 
-    if USING_DEFAULT_PASSWORD:
+    if using_default_password(ADMIN_PASSWORD):
         print(
             "\n[安全提示] 当前使用的是默认管理员口令（admin12345）。\n"
             "          部署前请在 .env 中设置 ADMIN_PASSWORD，或登录后台后修改口令。\n"
@@ -63,7 +64,6 @@ async def on_startup() -> None:
 
 # API 路由必须先注册，之后再挂载静态目录，否则 /api/* 会被静态文件服务吞掉
 app.include_router(public.router)
-app.include_router(comments.router)
 app.include_router(admin.router)
 
 

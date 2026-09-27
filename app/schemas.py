@@ -14,7 +14,6 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 CategoryKind = Literal["movie_genre", "work_type", "interest", "skill"]
 WorkStatus = Literal["idea", "demo", "released"]
-CommentTarget = Literal["movie", "work", "profile"]
 
 
 def _clean(v: str | None) -> str | None:
@@ -476,42 +475,6 @@ class SkillItemUpdate(BaseModel):
     sort_order: int | None = None
 
 
-# ----------------------------- Comment -----------------------------
-
-
-class CommentOut(ORMModel):
-    id: int
-    target_type: str
-    target_id: int
-    nickname: str
-    content: str
-    created_at: datetime
-    # 前台拿到的都是未隐藏的，这两个字段主要给后台用
-    hidden: bool = False
-    reviewed: bool = False
-    # 所属电影 / 作品的标题，由接口填充，不入库
-    target_title: str | None = None
-
-
-class CommentCreate(BaseModel):
-    nickname: str = Field(default="匿名访客", max_length=40)
-    content: str = Field(min_length=1, max_length=2000)
-
-    @field_validator("content", mode="before")
-    @classmethod
-    def _check_content(cls, v: str) -> str:
-        v = (v or "").strip()
-        if not v:
-            raise ValueError("评论内容不能为空")
-        return v
-
-    @field_validator("nickname", mode="before")
-    @classmethod
-    def _check_nick(cls, v: str) -> str:
-        v = (v or "").strip() or "匿名访客"
-        return v[:40]
-
-
 # ----------------------------- Admin -----------------------------
 
 
@@ -646,12 +609,6 @@ class OkOut(BaseModel):
 class StatsOut(BaseModel):
     movies: int = 0
     works: int = 0
-    comments: int = 0
-    hidden_comments: int = 0
-    # 藏在 hidden 里、但站长还没处理过的（开启先审后发后新评论都落在这里）
-    pending_comments: int = 0
-    # 当前是否是「先审后发」模式，后台据此提示
-    comment_moderation: bool = False
     categories: int = 0
     interests: int = 0
     resume_items: int = 0

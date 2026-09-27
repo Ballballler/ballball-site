@@ -50,11 +50,6 @@ APP_ENV=production
 ADMIN_PASSWORD=换成你自己的强口令
 SITE_URL=https://你的域名
 # SECRET_KEY 留空会自动生成并写回这个文件，生成后别再动它
-COMMENT_RATE_LIMIT=10
-COMMENT_RATE_WINDOW=600
-# 想先审后发就打开；评论区被刷屏时再开也来得及
-# COMMENT_MODERATION=1
-TRUST_PROXY=1
 EOF
 chmod 600 /srv/ballball/.env
 ```
@@ -83,10 +78,7 @@ systemctl status ballball --no-pager
 - `.venv` 路径不对 → 报 `No such file or directory`；
 - 端口被占用 → 换端口或杀掉占用进程 `sudo ss -lntp | grep 8800`。
 
-**多 worker 说明**：评论限流用的是进程内存（`app/routers/comments.py` 里的 `_RATE_BUCKET`）。
-跑 `--workers 1` 时计数是准的；一旦开多 worker，每个进程各算一份，实际额度会翻倍。
-真要多 worker，把这段计数挪到 Redis。个人站用单 worker 完全够，
-瓶颈在带宽不在 CPU。
+**多 worker 说明**：个人站用单 worker 完全够，瓶颈在带宽不在 CPU。
 
 ---
 
@@ -210,8 +202,6 @@ curl -sf http://127.0.0.1:8800/healthz && echo OK
 - [ ] `curl https://你的域名/healthz` 返回 ok
 - [ ] `/` `/movies.html` `/works.html` `/resume.html` 都能打开，无控制台报错
 - [ ] `/admin.html` 能用新口令登录，登不进说明 `.env` 没生效
-- [ ] 发一条测试评论，前台能看到，后台能隐藏/删除
-- [ ] 后台「评论」里每条都显示得出所属电影/作品的**标题**（不是 `#3`）
 - [ ] 后台改一条电影，刷新前台立刻变化
 - [ ] 后台能上传一张图片，且前台显示出来
 - [ ] `.env` 里 `SITE_URL` 是真实域名，访问 `/sitemap.xml` 里的链接是绝对地址

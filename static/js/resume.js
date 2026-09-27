@@ -73,7 +73,7 @@ function renderSkills(skills) {
   if (!wrap) return;
   wrap.textContent = "";
   if (!skills.length) {
-    wrap.appendChild(el("p", { class: "empty", text: "还没有技能，去后台加几条。" }));
+    wrap.appendChild(el("p", { class: "empty", text: "还没有技能。" }));
     return;
   }
 
@@ -237,7 +237,7 @@ function renderJourney() {
 
   if (!state.journey.length) {
     wrap.appendChild(
-      el("p", { class: "empty", text: "还没写成长路径。去后台「成长路径」里加第一步。" })
+      el("p", { class: "empty", text: "还没写成长路径。" })
     );
     return;
   }

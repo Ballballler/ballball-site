@@ -2,8 +2,7 @@
 
 设计原则：
 1. 所有面向前台展示的内容都带 sort_order / created_at，后台可排序可归档；
-2. 需要多值的轻量字段（标签、外链）用 JSON 列，避免为标签再开两张表；
-3. 删除策略：电影/作品/兴趣删除时，其评论通过应用层一并清理（SQLite 外键已开启）。
+2. 需要多值的轻量字段（标签、外链）用 JSON 列，避免为标签再开两张表。
 """
 from __future__ import annotations
 
@@ -295,22 +294,3 @@ class PageSection(Base, TimestampMixin):
     title: Mapped[str] = mapped_column(String(80), default="", nullable=False)
     visible: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-
-
-class Comment(Base):
-    """评论区。对所有访客开放，无需登录，只需填昵称。"""
-
-    __tablename__ = "comment"
-    __table_args__ = (Index("ix_comment_target", "target_type", "target_id"),)
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    target_type: Mapped[str] = mapped_column(String(20), nullable=False)  # movie/work/profile
-    target_id: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    nickname: Mapped[str] = mapped_column(String(40), nullable=False)
-    content: Mapped[str] = mapped_column(Text, nullable=False)
-    # IP 的哈希，用于限流与滥用追溯，不存明文 IP
-    ip_hash: Mapped[str] = mapped_column(String(64), default="", nullable=False)
-    hidden: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    # 站长是否处理过这条。hidden 且未处理 = 待审核；hidden 且已处理 = 被主动隐藏。
-    reviewed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow, nullable=False)

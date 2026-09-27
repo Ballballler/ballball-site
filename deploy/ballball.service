@@ -11,7 +11,7 @@ Group=ballball
 WorkingDirectory=/srv/ballball
 EnvironmentFile=/srv/ballball/.env
 
-# 单进程足够一个小站；多进程会让内存里的评论限流各算一份
+# 单进程足够一个小站
 ExecStart=/srv/ballball/.venv/bin/uvicorn app.main:app \
     --host 127.0.0.1 \
     --port 8800 \

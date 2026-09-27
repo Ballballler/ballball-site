@@ -1,6 +1,6 @@
 # Ballball 的主页
 
-一个从后端到前端都自己写的个人站点：**自我介绍开场 → 简历 → 恐怖电影档案（开放评论区）→ 音乐构思**，
+一个从后端到前端都自己写的个人站点：**自我介绍开场 → 简历 → 恐怖电影档案 → 音乐构思**，
 配一个能增删改查所有内容的管理后台。
 
 技术栈：FastAPI + SQLAlchemy + SQLite，前端是原生 HTML / CSS / JS，没有构建步骤。
@@ -39,20 +39,14 @@
 | --- | --- |
 | `/` | 首页：自我介绍开场、3D 环绕轨道、关键词跑马灯、关于我、3D 技能球 + 简历摘要、兴趣、电影与作品预览 |
 | `/resume.html` | 简历：自我介绍开场、3D 技能球、分组技能条、教育与经历时间轴（可直接打印成 PDF） |
-| `/movies.html` | 恐怖电影档案：按分类筛选，点卡片看长评与评论区，支持 `#movie-3` 深链分享 |
-| `/works.html` | 音乐构思：按状态筛选，详情含 BPM / 调性 / 创作笔记 / 音频小样 / 评论区 |
-| `/admin.html` | 管理后台：概览、关于我、简历经历、技能、兴趣爱好、电影、作品、分类、评论、改口令 |
+| `/movies.html` | 恐怖电影档案：按分类筛选，点卡片看长评，支持 `#movie-3` 深链分享 |
+| `/works.html` | 音乐构思：按状态筛选，详情含 BPM / 调性 / 创作笔记 / 音频小样 |
+| `/admin.html` | 管理后台：概览、关于我、简历经历、技能、兴趣爱好、电影、作品、分类、改口令（前台不放入口，直接输网址进） |
 | `/healthz` | 健康检查（给监控和 nginx 用） |
 | `/robots.txt` | 屏蔽 `/admin` 与 `/api/`，指向 sitemap |
 | `/sitemap.xml` | 按数据库实际内容生成，含每部电影与作品的深链 |
 
-评论对所有访客开放，只需要填昵称（可留空，默认是「匿名访客」）。
 后台需要口令登录，会话 12 小时。
-
-**评论管理**：后台「评论」页可以按状态筛选（全部 / 待审核 / 已公开 / 已隐藏），
-每条都显示它挂在哪部电影或哪个作品下面（不是光秃秃的 `#3`）。
-默认即发即显；如果被人刷屏，在 `.env` 里设 `COMMENT_MODERATION=1` 重启，
-之后新留言会先扣下来，审核通过才公开——待审数量会显示在侧边栏和概览页上。
 
 **图片上传**：后台的海报 / 封面 / 头像字段都能直接上传本地图片，
 不再只能填外链。文件落在 `static/uploads/<年月>/`，文件名是随机串。
@@ -111,12 +105,8 @@ python run.py --port 9000          # 换端口
 | `DATA_DIR` | `./data` | SQLite 与口令文件的存放目录 |
 | `DATABASE_URL` | `sqlite:///data/site.db` | 换 PostgreSQL 只改这一行 |
 | `SESSION_TTL_SECONDS` | `43200` | 后台会话有效期（12 小时） |
-| `COMMENT_RATE_LIMIT` | `10` | 同一 IP 在窗口期内的评论上限 |
-| `COMMENT_RATE_WINDOW` | `600` | 限流窗口（秒） |
-| `COMMENT_MODERATION` | `0` | 设为 `1` 开启先审后发：留言要在后台点「通过」才公开 |
 | `SITE_URL` | `http://127.0.0.1:8800` | 站点对外地址，sitemap 与分享卡用它拼绝对 URL。**部署后必改** |
 | `MAX_UPLOAD_BYTES` | `8388608` | 单张上传图片的上限（8MB） |
-| `TRUST_PROXY` | `1` | 是否信任 `X-Forwarded-For`。**不挂反向代理时请设为 0** |
 
 ---
 
@@ -143,7 +133,6 @@ sudo cp deploy/nginx.conf /etc/nginx/sites-available/ballball
 - [ ] `APP_ENV=production`（关闭 API 文档）
 - [ ] `SITE_URL` 已改成真实域名，否则 sitemap 里全是 `127.0.0.1`
 - [ ] HTTPS 已配置，Cookie 的 `secure` 打开（见 `app/routers/admin.py` 的 `_set_cookie`）
-- [ ] 没有挂在反向代理后面时，`TRUST_PROXY=0`
 - [ ] `data/` 目录不在静态目录里，无法被公网下载
 - [ ] 换过头像 / 名字之后重跑过 `deploy/make_brand_assets.py`，分享卡是新的
 
@@ -154,7 +143,7 @@ sudo cp deploy/nginx.conf /etc/nginx/sites-available/ballball
 ```
 data/
 ├── site.db       # 所有内容：profile / category / interest / movie / work
-│                 #           / resume_item / skill_item / comment
+│                 #           / resume_item / skill_item
 └── admin.json    # 管理口令的 PBKDF2 散列（不含明文）
 
 static/uploads/   # 后台传上来的图片（数据库里只存路径，备份别漏了这个目录）
@@ -169,19 +158,18 @@ static/uploads/   # 后台传上来的图片（数据库里只存路径，备份
 
 ```
 app/
-├── config.py        环境变量、密钥、限流、上传与站点地址配置
+├── config.py        环境变量、密钥、上传与站点地址配置
 ├── database.py      引擎与会话（SQLite 开 WAL + 外键），含后加列的自动升级
-├── models.py        8 张表：profile / category / interest / movie / work
-│                    / resume_item / skill_item / comment
+├── models.py        7 张表：profile / category / interest / movie / work
+│                    / resume_item / skill_item
 ├── schemas.py       Pydantic 请求与响应模型
-├── security.py      口令散列、会话签名、IP 哈希
+├── security.py      口令散列、会话签名
 ├── assets.py        css/js 指纹（给 HTML 里的引用注入 ?v=内容哈希）
 ├── seed.py          初始示例内容
 ├── main.py          应用入口、页面路由、robots.txt / sitemap.xml
 └── routers/
     ├── public.py    前台只读接口
-    ├── comments.py  匿名评论（含限流与先审后发）
-    ├── admin.py     后台增删改查 + 图片上传 + 评论审核
+    ├── admin.py     后台增删改查 + 图片上传
     └── deps.py      管理员鉴权依赖
 static/
 ├── index.html  resume.html  movies.html  works.html  admin.html
@@ -190,10 +178,9 @@ static/
 ├── apple-touch-icon.png   添加到手机主屏（脚本生成）
 ├── og-image.png           分享卡大图（脚本生成）
 ├── uploads/               后台上传的图片
-├── css/    fonts.css（自托管字体）base.css（令牌/背景氛围）glass.css（玻璃 + 3D 球）
-│           pages.css  resume.css（时间轴与打印样式）admin.css
+├── css/    fonts.css（自托管字体）orbit.css（全站统一主题）
 ├── fonts/  chakra-petch-{500,600,700}.woff2  jetbrains-mono-{400,700}.woff2
-└── js/     common.js（请求/动画/评论区/卡片）sphere.js（3D 标签球）
+└── js/     common.js（请求/动画/详情弹层/卡片）sphere.js（3D 标签球）
             home.js  resume.js  movies.js  works.js  admin.js
 deploy/
 ├── fetch_fonts.py          拉取自托管字体
@@ -211,8 +198,6 @@ deploy/
 
 ## 七、已知边界
 
-- 评论限流存在进程内存里。**多 worker 部署时每个进程各算一份**，
-  要严格限流就改到 Redis，或干脆用 `--workers 1`。
 - 音频（音乐小样）还是外链 URL，没做上传。图片已经能在后台上传了，
   音频文件通常几十 MB，建议直接丢对象存储或 CDN 再填 URL。
 - 上传只收 jpg / png / webp / gif / avif，**有意不收 SVG**：

@@ -59,7 +59,9 @@ def image_url(path: str, size: str = "w500") -> str:
     return f"{_image_base}/{size}/{path.lstrip('/')}"
 
 
-async def _get(path: str, params: dict, ttl: float | None = None) -> dict:
+async def _get(
+    path: str, params: dict, ttl: float | None = None, timeout: float | None = None
+) -> dict:
     key = f"{path}?{urlencode(sorted(params.items()))}"
     now = time.monotonic()
     hit = _cache.get(key)
@@ -69,7 +71,12 @@ async def _get(path: str, params: dict, ttl: float | None = None) -> dict:
     query = dict(params)
     query["api_key"] = TMDB_API_KEY
     try:
-        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+        client_timeout = (
+            httpx.Timeout(timeout, connect=min(2.0, timeout or 2.0))
+            if timeout is not None
+            else _TIMEOUT
+        )
+        async with httpx.AsyncClient(timeout=client_timeout) as client:
             res = await client.get(_API + path, params=query)
     except httpx.HTTPError as exc:
         raise TmdbError(f"连不上 TMDB（{exc.__class__.__name__}），请检查网络") from exc
@@ -86,10 +93,12 @@ async def _get(path: str, params: dict, ttl: float | None = None) -> dict:
     return data
 
 
-async def refresh_configuration(force: bool = False) -> str:
+async def refresh_configuration(force: bool = False, timeout: float = 3.0) -> str:
     """拉一次图片基础地址。TMDB 建议不要硬编码 CDN 域名，所以启动时刷一次。
 
     失败静默回落到配置里的 TMDB_IMAGE_BASE，不影响站点运行。
+    timeout 默认只给 3 秒：这是启动路径上的网络调用，服务器连不上 TMDB 时
+    不该让整个站点晚十几秒才起来（systemd 有启动超时）。
     """
     global _image_base, _image_base_at
     now = time.monotonic()
@@ -98,7 +107,7 @@ async def refresh_configuration(force: bool = False) -> str:
     if not configured():
         return _image_base
     try:
-        data = await _get("/configuration", {}, ttl=86400)
+        data = await _get("/configuration", {}, ttl=86400, timeout=timeout)
         base = (data.get("images") or {}).get("secure_base_url") or ""
         if base:
             _image_base = base.rstrip("/")

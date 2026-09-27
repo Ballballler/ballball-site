@@ -1,6 +1,6 @@
 /* ========================================================================
    movies.js —— 恐怖电影档案：幽灵 + 幽灵系宝可梦 主视觉
-   数据走真实 API（/api/movies /api/categories），评论落库。
+   数据走真实 API（/api/movies /api/categories）。
    ===================================================================== */
 
 /* 主幽灵（沿用 personal-orbit 的手绘小幽灵） */
@@ -84,7 +84,7 @@ function renderGrid() {
     return m.category_id === state.activeCategory;
   });
   if (!list.length) {
-    grid.appendChild(el("div", { class: "empty", text: "这个分类下还没有电影。去后台加一部。" }));
+    grid.appendChild(el("div", { class: "empty", text: "这个分类下还没有电影。" }));
     return;
   }
   list.forEach((m) => grid.appendChild(buildMovieCard(m, openMovieDetail)));

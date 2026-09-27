@@ -105,8 +105,6 @@ button.primary, .button.primary, .btn--primary {
 .main-nav a:hover, .main-nav a.is-active { color: var(--mint); }
 .header-actions { display: flex; align-items: center; gap: 12px; }
 .motion-button { font-size: 11px; padding: 8px 11px; border-radius: 30px; color: var(--muted); }
-.admin-link { font-size: 12px; color: var(--muted); white-space: nowrap; }
-.admin-link:hover { color: var(--mint); }
 
 /* ---------------------------- 通用文案 ---------------------------- */
 
@@ -523,20 +521,6 @@ button.primary, .button.primary, .btn--primary {
 .resume-hero .hero-foot { margin-top: 26px; }
 .resume-contacts .chip { font-size: 10px; }
 
-/* ---------------------------- 评论区 ---------------------------- */
-
-.comments { border-top: 1px solid var(--line); padding-top: 22px; margin-top: 24px; }
-.comments h3 { font-size: 17px; font-weight: 500; margin: 0 0 6px; }
-.comments > p { font-size: 11px; color: var(--muted); }
-.comment-list { margin-top: 10px; }
-.comment { padding: 15px 0; border-bottom: 1px solid #ffffff0a; }
-.comment strong { font-size: 12px; font-weight: 500; color: var(--mint); }
-.comment small { font-size: 10px; color: var(--faint); margin-left: 12px; }
-.comment p { font-size: 13px; color: #aeb8c5; white-space: pre-wrap; overflow-wrap: anywhere; margin: 6px 0 0; }
-.comment-empty { font-size: 12px; color: var(--muted); padding: 16px 0; }
-.comment-form { margin-top: 22px; }
-.comment-form .form-grid { grid-template-columns: 1fr; }
-
 /* ---------------------------- 表单 ---------------------------- */
 
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
@@ -560,7 +544,7 @@ dialog.modal {
   position: fixed;
   inset: 0;
   margin: auto;                       /* 配合 inset:0 实现真正的居中 */
-  width: min(760px, calc(100% - 40px));
+  width: min(720px, calc(100% - 40px));
   max-width: calc(100% - 40px);
   max-height: min(88dvh, 940px);
   padding: 0;
@@ -594,21 +578,21 @@ dialog.modal[open]::backdrop { animation: modal-fade 0.3s ease both; }
 /* 弹层打开时锁住页面滚动 */
 body:has(dialog[open]) { overflow: hidden; }
 
-.modal-panel { position: relative; padding: 0; }
+/* 内容面板：上下留足内边距。顶部整条空间让给关闭按钮，
+   避免评分圆环和 × 挤在同一个角落。 */
+.modal-panel { position: relative; padding: 52px 36px 40px; }
 .modal-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; padding: 22px 62px 18px 28px; border-bottom: 1px solid var(--line); }
 .modal-header h2 { font-size: 22px; font-weight: 520; margin: 4px 0; line-height: 1.4; overflow-wrap: anywhere; }
 
 /* 关闭按钮：nocturne 的 dialog-close —— 右上角圆形幽灵按钮 */
 .modal-close {
-  position: absolute; right: 16px; top: 14px; z-index: 5;
+  position: absolute; right: 18px; top: 16px; z-index: 5;
   width: 36px; height: 36px; padding: 0; line-height: 1;
   font-size: 26px; border: 0; border-radius: 50%;
   color: var(--muted); background: #ffffff08;
   transition: color 0.25s, background 0.25s;
 }
 .modal-close:hover { color: var(--ink); background: #8fb8a826; }
-
-.modal-content, .modal-panel .modal-body { padding: 26px 28px 30px; }
 
 /* 后台弹层：dialog 只当居中容器，卡片本体是 .modal__panel（glass 已有自己的底与边） */
 dialog.modal--admin {
@@ -637,16 +621,34 @@ dialog.modal--admin > .modal__panel {
   font-size: 15px; border-radius: 50%;
 }
 .modal__panel h3:first-child { padding-right: 46px; }
-.detail__head { display: flex; gap: 22px; flex-wrap: wrap; align-items: flex-start; }
+/* 详情内容：一个 grid 统一区块间距，替代以前散落的 0/14/18/22/24 margin */
+.detail { display: grid; gap: 26px; }
+.detail h3 { font-size: 16px; font-weight: 550; margin: 0 0 12px; letter-spacing: .01em; }
+.detail__head { display: flex; gap: 26px; flex-wrap: wrap; align-items: flex-start; }
 .detail__poster { width: 180px; aspect-ratio: 2/3; border-radius: 14px; overflow: hidden; background: #0d1017; display: grid; place-items: center; flex-shrink: 0; }
 .detail__disc { width: 180px; aspect-ratio: 1/1; border-radius: 50%; overflow: visible; background: transparent; }
 .detail__disc .record { box-shadow: 8px 16px 26px #0006, 0 0 0 1px #ffffff14; }
 .detail__poster img { width: 100%; height: 100%; object-fit: cover; }
-.detail__title { font-size: 24px; margin: 0 0 6px; }
-.detail__meta { font-size: 12px; color: var(--muted); }
-.detail__scores { display: flex; gap: 24px; margin: 22px 0; flex-wrap: wrap; }
-.score-box__label { font-size: 10px; color: var(--muted); margin-bottom: 8px; }
-.review { font-size: 14px; line-height: 1.95; white-space: pre-wrap; color: #b4bdc9; overflow-wrap: anywhere; }
+.detail__title { font-size: 22px; margin: 0 0 8px; line-height: 1.35; }
+.detail__meta { font-size: 12px; color: var(--muted); line-height: 1.75; }
+.detail__scores { display: flex; gap: 14px; margin: 0; flex-wrap: wrap; }
+.score-box {
+  flex: 1 1 150px;
+  padding: 14px 16px 15px;
+  border: 1px solid var(--line); border-radius: 14px; background: #ffffff04;
+}
+.score-box__label { font-size: 10px; color: var(--muted); margin-bottom: 10px; letter-spacing: .08em; }
+.detail__section .field__hint { display: block; margin-top: 10px; }
+.review {
+  font-size: 14px; line-height: 2.05; white-space: pre-wrap; color: #b4bdc9;
+  overflow-wrap: anywhere; margin: 0;
+  padding: 18px 20px; background: #ffffff05;
+  border: 1px solid var(--line); border-radius: 14px;
+}
+/* 站长的一句话结论 / 构思摘要：左侧一条彩色竖线区分 */
+.review--verdict { border-left: 3px solid var(--coral); font-weight: 700; }
+.review--idea { border-left: 3px solid #22d3ee; }
+.work-player__actions { margin-top: 14px; }
 .reading-note { font-size: 11px; color: var(--danger); padding: 9px 13px; border: 1px solid #d98a8024; border-radius: 8px; }
 
 /* ---------------------------- 页脚 ---------------------------- */
@@ -692,7 +694,6 @@ dialog.modal--admin > .modal__panel {
   display: inline-block; min-width: 18px; height: 18px; line-height: 18px; text-align: center;
   font: 10px var(--mono); border-radius: 20px; background: #8fb8a820; color: var(--mint); margin-left: 6px;
 }
-.side__badge--warn { background: #c9a06a24; color: var(--amber); }
 .tag-pill--muted { color: var(--muted); }
 .chip--ok { color: var(--mint); border-color: #8fb8a83d; background: #8fb8a812; }
 
@@ -719,8 +720,6 @@ dialog.modal--admin > .modal__panel {
 }
 /* 后台表头里的小筛选器 */
 .pane__actions .select { padding: 8px 12px; font-size: 12px; border-radius: 10px; }
-.alert--click { cursor: pointer; }
-.alert--click:hover { border-color: #8fb8a838; }
 .glass--strong { background: linear-gradient(130deg, #ffffff07, #ffffff03); }
 .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
 .admin-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 22px; flex-wrap: wrap; }
@@ -844,22 +843,6 @@ dialog.modal--admin > .modal__panel {
   width: 5px; height: 5px; border-radius: 50%; background: var(--chip-color, var(--mint));
 }
 
-/* 评论区 */
-.comments__head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-.comments__title { font-size: 17px; font-weight: 500; margin: 0; }
-.comments__count { font-size: 11px; color: var(--muted); font-family: var(--mono); }
-.comment { display: flex; gap: 12px; }
-.comment__avatar {
-  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
-  display: grid; place-items: center; color: #0c0f14; font-weight: 700; font-size: 13px;
-}
-.comment__head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.comment__name { font-size: 12px; font-weight: 600; color: var(--ink); }
-.comment__time { font-size: 10px; color: var(--faint); }
-.comment__body { font-size: 13px; color: #aeb8c5; margin: 4px 0 0; white-space: pre-wrap; }
-.comment-form { display: grid; gap: 10px; }
-.comment-form__submit { display: flex; justify-content: flex-end; }
-
 /* ---------------------------- 动画 ---------------------------- */
 
 .hero-copy { animation: enter .8s var(--ease) both; }
@@ -915,6 +898,8 @@ body.motion-held *, body.motion-held *::before, body.motion-held *::after {
   .admin-layout { grid-template-columns: 1fr; }
   .admin-nav, .side { position: static; flex-direction: row; flex-wrap: wrap; }
   .detail__poster { width: 130px; }
+  .modal-panel { padding: 46px 22px 30px; }
+  .detail { gap: 20px; }
   .footer-top { flex-direction: column; }
 }
 @media (max-width: 380px) {

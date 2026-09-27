@@ -55,9 +55,6 @@ SIMPLE_ENDPOINTS = [
 # 每条共用一份 section 配置
 PAGE_SECTIONS = ["index", "resume", "movies", "works"]
 
-# 评论的两种归属，和前端 createComments 的 targetType 对应
-COMMENT_TARGETS = [("movie", "movies"), ("work", "works")]
-
 
 def build_snapshot(client: TestClient) -> dict:
     """把前台需要的全部数据拉成一份字典。"""
@@ -69,21 +66,6 @@ def build_snapshot(client: TestClient) -> dict:
     for page in PAGE_SECTIONS:
         path = f"/api/page-sections/{page}"
         snap[path] = _get_json(client, path)
-
-    # 评论没有「全量」接口，只能按条目拉，这里合并成一整份，
-    # 前端 common.js 的 staticLookup 会按 target_type / target_id 现场筛。
-    comments: list = []
-    for target_type, list_key in COMMENT_TARGETS:
-        for item in snap[f"/api/{list_key}"] or []:
-            item_id = item.get("id")
-            if item_id is None:
-                continue
-            path = f"/api/comments?target_type={target_type}&target_id={item_id}"
-            rows = _get_json(client, path) or []
-            comments.extend(rows)
-    # 按时间倒序，和后台列表一致
-    comments.sort(key=lambda c: c.get("created_at") or "", reverse=True)
-    snap["/api/comments"] = comments
 
     return snap
 
@@ -103,20 +85,8 @@ def _inline_script(var: str, payload: str) -> str:
     return f"<script>window.{var}={safe}</script>"
 
 
-def giscus_config() -> dict:
-    """Giscus 配置。GitHub Actions 里 GITHUB_REPOSITORY 会自动填成 owner/repo。"""
-    return {
-        "repo": os.getenv("GISCUS_REPO") or os.getenv("GITHUB_REPOSITORY") or "",
-        "repoId": os.getenv("GISCUS_REPO_ID", ""),
-        "category": os.getenv("GISCUS_CATEGORY", "Announcements"),
-        "categoryId": os.getenv("GISCUS_CATEGORY_ID", ""),
-        "theme": os.getenv("GISCUS_THEME", "transparent_dark"),
-    }
-
-
 def render_pages(dist: Path, snap: dict, site_url: str) -> list[str]:
     written = []
-    giscus = giscus_config()
 
     for name in PAGES:
         src = assets.STATIC_DIR / name
@@ -126,8 +96,6 @@ def render_pages(dist: Path, snap: dict, site_url: str) -> list[str]:
         html = src.read_text(encoding="utf-8")
 
         payload = _inline_script("__SITE_DATA__", snap)
-        if giscus["repo"]:
-            payload += "\n" + _inline_script("__GISCUS__", giscus)
 
         # 放在 </head> 前，保证业务脚本执行时数据已经就位
         if "</head>" in html:
@@ -225,7 +193,7 @@ def _write_admin_notice(dist: Path, site_url: str) -> None:
     所以这块在这里用不了，登录框和上传功能都不会出现。
   </p>
   <p>
-    真正的后台一直在你自己的电脑上。改内容、发评论审核、传图片都在那儿做，
+    真正的后台一直在你自己的电脑上。改内容、传图片都在那儿做，
     做完重新导出一次，这个网址就更新了。
   </p>
 
@@ -313,8 +281,7 @@ def main() -> None:
     print(
         f"  数据快照：{len(snap)} 个键，"
         f"电影 {len(snap.get('/api/movies') or [])} 部 / "
-        f"作品 {len(snap.get('/api/works') or [])} 个 / "
-        f"评论 {len(snap.get('/api/comments') or [])} 条"
+        f"作品 {len(snap.get('/api/works') or [])} 个"
     )
 
     files = copy_assets(dist)

@@ -1,10 +1,10 @@
 /* ========================================================================
    common.js —— 全站公共逻辑
-   请求封装 / 提示 / 入场动画 / 鼠标光晕 / 滚动进度 / 评论区组件
+   请求封装 / 提示 / 入场动画 / 鼠标光晕 / 滚动进度 / 详情弹层
    安全约定：所有用户输入一律用 textContent 渲染，绝不使用 innerHTML 拼接
 
    两种运行模式：
-     1. 动态模式（本地 / 自己的服务器）：一切走 /api/*，后台、登录、写评论都在；
+     1. 动态模式（本地 / 自己的服务器）：一切走 /api/*，后台、登录都在；
      2. 静态模式（GitHub Pages）：tools/export_static.py 把数据库内容内联成
         window.__SITE_DATA__，只读部分照样渲染，写操作优雅降级。
    ===================================================================== */
@@ -21,80 +21,13 @@ function isStaticMode() {
 
 const STATIC_READONLY_MSG = "这是 GitHub Pages 上的只读版本，登录与写操作只在自己的服务器上可用";
 
-/* --------------------- 静态站（GitHub Pages）评论区 --------------------- */
-
 /**
- * 静态站点上评论区没有后端，用 Giscus 顶上：它把评论存在 GitHub Discussions 里，
- * 访客用 GitHub 账号发言，不需要我们自己的服务器。
- *
- * 需要仓库开启 Discussions，配置由 tools/export_static.py 从环境变量注入到
- * window.__GISCUS__。没配置就退化成一句说明 + 去 Discussions 的链接。
- */
-function mountGiscus(container, term) {
-  const cfg = (typeof window !== "undefined" && window.__GISCUS__) || null;
-  if (!cfg || !cfg.repo) return false;
-  if (container.dataset.giscusLoaded) return true;
-  container.dataset.giscusLoaded = "1";
-
-  // 这里必须用原生 createElement：el() 助手出于防 XSS 关掉了任意属性设置，
-  // 而 Giscus 全靠 data-* 属性传配置。
-  const script = document.createElement("script");
-  script.src = "https://giscus.app/client.js";
-  script.async = true;
-  script.crossOrigin = "anonymous";
-  const attrs = {
-    "data-repo": cfg.repo,
-    "data-repo-id": cfg.repoId || "",
-    "data-category": cfg.category || "Announcements",
-    "data-category-id": cfg.categoryId || "",
-    "data-mapping": "specific",
-    "data-term": term,
-    "data-strict": "0",
-    "data-reactions-enabled": "1",
-    "data-emit-metadata": "0",
-    "data-input-position": "top",
-    "data-theme": cfg.theme || "transparent_dark",
-    "data-lang": "zh-CN",
-    "data-loading": "lazy",
-  };
-  Object.keys(attrs).forEach((k) => script.setAttribute(k, attrs[k]));
-  container.appendChild(script);
-  return true;
-}
-
-function staticCommentSlot(targetType, targetId) {
-  const holder = el("div", { class: "comment-static" });
-  const term = `${targetType}-${targetId}`;
-
-  if (!mountGiscus(holder, term)) {
-    holder.appendChild(
-      el("p", {
-        class: "empty",
-        text: "这是静态导出的只读版本，评论未接入。想留言可以去 GitHub Discussions。",
-      })
-    );
-  }
-  return holder;
-}
-
-/**
- * 在快照里找 GET 路径。
- * 评论是按 target_type + target_id 过滤的，快照里存全量，这里现场筛。
+ * 在快照里找 GET 路径，找不到返回 undefined（调用方继续走网络请求）。
  */
 function staticLookup(path) {
   const snap = staticSnapshot();
   if (!snap) return undefined;
   if (Object.prototype.hasOwnProperty.call(snap, path)) return snap[path];
-
-  if (path.startsWith("/api/comments?")) {
-    const q = new URLSearchParams(path.slice(path.indexOf("?") + 1));
-    const targetType = q.get("target_type");
-    const targetId = Number(q.get("target_id"));
-    const all = snap["/api/comments"] || [];
-    return all.filter(
-      (c) => c.target_type === targetType && Number(c.target_id) === targetId
-    );
-  }
   return undefined;
 }
 
@@ -331,33 +264,6 @@ function fmtDate(value) {
   )}:${pad(d.getMinutes())}`;
 }
 
-function relTime(value) {
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "";
-  const diff = (Date.now() - d.getTime()) / 1000;
-  if (diff < 60) return "刚刚";
-  if (diff < 3600) return `${Math.floor(diff / 60)} 分钟前`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)} 小时前`;
-  if (diff < 2592000) return `${Math.floor(diff / 86400)} 天前`;
-  return fmtDate(value).slice(0, 10);
-}
-
-const AVATAR_COLORS = [
-  "linear-gradient(135deg,#22d3ee,#8b5cf6)",
-  "linear-gradient(135deg,#fb7185,#f43f5e)",
-  "linear-gradient(135deg,#f59e0b,#f97316)",
-  "linear-gradient(135deg,#10b981,#059669)",
-  "linear-gradient(135deg,#6366f1,#8b5cf6)",
-  "linear-gradient(135deg,#ec4899,#a855f7)",
-];
-
-function avatarColor(seed) {
-  let h = 0;
-  const str = String(seed || "");
-  for (let i = 0; i < str.length; i += 1) h = (h * 31 + str.charCodeAt(i)) >>> 0;
-  return AVATAR_COLORS[h % AVATAR_COLORS.length];
-}
-
 /** 生成 DOM 的小助手：{tag, class, text, ...} */
 function el(tag, props = {}, children = []) {
   const node = document.createElement(tag);
@@ -384,147 +290,6 @@ function levelDots(level, max = 5) {
     wrap.appendChild(el("i", { class: i <= level ? "on" : "" }));
   }
   return wrap;
-}
-
-/* ---------------------------- 评论区组件 ---------------------------- */
-
-/**
- * 渲染一个评论区（列表 + 发言表单）。
- * 所有昵称与正文都走 textContent，天然防 XSS。
- */
-function createComments({ targetType, targetId, title = "大家的看法" }) {
-  const root = el("section", { class: "comments" });
-
-  const count = el("span", { class: "comments__count", text: "加载中…" });
-  const head = el("div", { class: "comments__head" }, [
-    el("h3", { class: "comments__title", text: title }),
-    count,
-  ]);
-
-  // ---- 表单 ----
-  const nickInput = el("input", {
-    class: "input",
-    type: "text",
-    maxlength: "40",
-    placeholder: "昵称（可留空）",
-    "aria-label": "昵称",
-  });
-  const contentInput = el("textarea", {
-    class: "textarea",
-    maxlength: "2000",
-    placeholder: "说说你的看法，反驳我的评分也没关系…",
-    "aria-label": "评论内容",
-    style: { minHeight: "84px" },
-  });
-  const submit = el(
-    "button",
-    { class: "btn btn--primary btn--sm", type: "submit", text: "发送" },
-    []
-  );
-
-  const submitWrap = el("div", { class: "comment-form__submit" }, [submit]);
-  const form = el("form", { class: "comment-form" }, [
-    nickInput,
-    contentInput,
-    submitWrap,
-  ]);
-
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const content = contentInput.value.trim();
-    if (!content) {
-      toast("先写点什么吧", "err");
-      contentInput.focus();
-      return;
-    }
-    submit.disabled = true;
-    const original = submit.textContent;
-    submit.textContent = "发送中…";
-    try {
-      const created = await API.post(`/api/comments/${targetType}/${targetId}`, {
-        nickname: nickInput.value.trim() || "匿名访客",
-        content,
-      });
-      contentInput.value = "";
-      if (created && created.hidden) {
-        // 先审后发：别乐观地塞进列表，等站长放行再显示
-        toast("已提交，等站长通过后就会显示出来");
-      } else {
-        list.prepend(renderComment(created));
-        count.textContent = `${list.children.length} 条评论`;
-        toast("已发布，谢谢你留下的看法");
-      }
-      try {
-        localStorage.setItem("bb_nickname", nickInput.value.trim());
-      } catch (_) {
-        /* 隐私模式下忽略 */
-      }
-    } catch (err) {
-      toast(err.message, "err");
-    } finally {
-      submit.disabled = false;
-      submit.textContent = original;
-    }
-  });
-
-  try {
-    const saved = localStorage.getItem("bb_nickname");
-    if (saved) nickInput.value = saved;
-  } catch (_) {
-    /* 忽略 */
-  }
-
-  // ---- 列表 ----
-  const list = el("div", { class: "comment-list" });
-
-  function renderComment(c) {
-    const initial = (c.nickname || "匿").trim().slice(0, 1).toUpperCase() || "匿";
-    return el("article", { class: "comment" }, [
-      el("div", {
-        class: "comment__avatar",
-        text: initial,
-        style: { background: avatarColor(c.nickname) },
-      }),
-      el("div", { style: { flex: "1", minWidth: "0" } }, [
-        el("div", { class: "comment__head" }, [
-          el("span", { class: "comment__name", text: c.nickname }),
-          el("time", { class: "comment__time", text: relTime(c.created_at) }),
-        ]),
-        el("p", { class: "comment__body", text: c.content }),
-      ]),
-    ]);
-  }
-
-  // 静态导出版没有后端可写：表单换成 Giscus（GitHub Discussions 承载），
-  // 历史评论仍作为快照照常展示。
-  const inputSlot = isStaticMode()
-    ? staticCommentSlot(targetType, targetId)
-    : form;
-
-  root.append(head, inputSlot, list);
-
-  API.get(`/api/comments?target_type=${targetType}&target_id=${targetId}`)
-    .then((rows) => {
-      list.textContent = "";
-      if (!rows.length) {
-        list.appendChild(
-          el("p", {
-            class: "empty",
-            text: "还没有人留言。第一句话由你来说。",
-          })
-        );
-        count.textContent = "暂无评论";
-        return;
-      }
-      rows.forEach((c) => list.appendChild(renderComment(c)));
-      count.textContent = `${rows.length} 条评论`;
-    })
-    .catch(() => {
-      count.textContent = "";
-      list.appendChild(el("p", { class: "empty", text: "评论加载失败，稍后再试。" }));
-    });
-
-  return root;
 }
 
 /* --------------------------- 卡片构建（复用） --------------------------- */
@@ -827,8 +592,8 @@ function openMovieDetail(movie) {
 
   if (movie.overview) {
     parts.push(
-      el("div", {}, [
-        el("h3", { style: { marginBottom: "10px" }, text: "剧情简介" }),
+      el("div", { class: "detail__section" }, [
+        el("h3", { text: "剧情简介" }),
         el("p", { class: "review", text: movie.overview }),
         el("p", {
           class: "field__hint",
@@ -842,31 +607,19 @@ function openMovieDetail(movie) {
   if (movie.verdict) {
     parts.push(
       el("p", {
-        class: "review",
-        style: {
-          borderLeft: "3px solid var(--coral)",
-          paddingLeft: "14px",
-          fontWeight: "700",
-        },
+        class: "review review--verdict",
         text: movie.verdict,
       })
     );
   }
   parts.push(
-    el("div", {}, [
-      el("h3", { style: { marginBottom: "10px" }, text: "我的长评" }),
+    el("div", { class: "detail__section" }, [
+      el("h3", { text: "我的长评" }),
       el("p", { class: "review", text: movie.review || "这篇还没写完，先记个标题在这儿。" }),
     ])
   );
-  parts.push(
-    createComments({
-      targetType: "movie",
-      targetId: movie.id,
-      title: `关于《${movie.title}》大家怎么说`,
-    })
-  );
 
-  const wrap = el("div", {}, parts);
+  const wrap = el("div", { class: "detail" }, parts);
   openDetailWith(wrap, `#movie-${movie.id}`);
 }
 
@@ -950,7 +703,7 @@ function openWorkDetail(work) {
 
   if (work.summary) {
     parts.push(
-      el("p", { class: "review", style: { borderLeftColor: "#22d3ee" }, text: work.summary })
+      el("p", { class: "review review--idea", text: work.summary })
     );
   }
 
@@ -977,10 +730,10 @@ function openWorkDetail(work) {
     player.addEventListener("loadedmetadata", paintMeta);
     paintMeta();
 
-    const box = [el("h3", { style: { marginBottom: "12px" }, text: "试听" }), player, meta];
+    const box = [el("h3", { text: "试听" }), player, meta];
     if (work.allow_download) {
       box.push(
-        el("div", { style: { marginTop: "12px" } }, [
+        el("div", { class: "work-player__actions" }, [
           el("a", {
             class: "btn btn--sm",
             href: work.audio_url,
@@ -990,26 +743,17 @@ function openWorkDetail(work) {
         ])
       );
     }
-    parts.push(
-      el("div", { class: "glass glass--pad glass--soft", style: { marginTop: "18px" } }, box)
-    );
+    parts.push(el("div", { class: "glass glass--pad glass--soft" }, box));
   }
 
   parts.push(
-    el("div", { style: { marginTop: "18px" } }, [
-      el("h3", { style: { marginBottom: "10px" }, text: "创作笔记" }),
+    el("div", { class: "detail__section" }, [
+      el("h3", { text: "创作笔记" }),
       el("p", { class: "review", text: work.notes || "还没写笔记。" }),
     ])
   );
-  parts.push(
-    createComments({
-      targetType: "work",
-      targetId: work.id,
-      title: `关于《${work.title}》的想法`,
-    })
-  );
 
-  openDetailWith(el("div", {}, parts), `#work-${work.id}`);
+  openDetailWith(el("div", { class: "detail" }, parts), `#work-${work.id}`);
 }
 
 /* ------------------------------ 启动 ------------------------------ */

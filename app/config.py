@@ -63,7 +63,8 @@ SECRET_KEY: str = _ensure_secret_key()
 
 # 管理员口令。默认值仅供本地开发，生产环境必须通过环境变量覆盖。
 ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "admin12345")
-USING_DEFAULT_PASSWORD: bool = os.getenv("ADMIN_PASSWORD") is None
+# 注意：别用「环境变量在不在」判断有没有换过口令 —— 口令可以在后台改，
+# 改完写进 data/admin.json。真正的判断见 security.using_default_password()。
 
 # 会话有效期
 SESSION_TTL_SECONDS: int = int(os.getenv("SESSION_TTL_SECONDS", "43200"))  # 12 小时
@@ -72,22 +73,6 @@ SESSION_COOKIE_NAME: str = "bb_admin_session"
 # 数据目录同时存放 SQLite 文件
 DATABASE_URL: str = os.getenv(
     "DATABASE_URL", f"sqlite:///{(DATA_DIR / 'site.db').as_posix()}"
-)
-
-# 评论频率限制：同一 IP 在窗口期内最多发的条数
-COMMENT_RATE_LIMIT: int = int(os.getenv("COMMENT_RATE_LIMIT", "10"))
-COMMENT_RATE_WINDOW: int = int(os.getenv("COMMENT_RATE_WINDOW", "600"))  # 秒
-
-# 允许评论挂载的目标类型
-COMMENT_TARGETS = ("movie", "work", "profile")
-
-# 先审后发：开启后访客留言默认不公开，要站长在后台点「通过」才显示。
-# 评论区完全对外开放，这个开关是被刷屏时的最后一道闸门。
-COMMENT_MODERATION: bool = os.getenv("COMMENT_MODERATION", "0").strip().lower() in (
-    "1",
-    "true",
-    "yes",
-    "on",
 )
 
 # 后台上传的图片存放位置（在 static 下，nginx 会直接命中）
