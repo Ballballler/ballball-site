@@ -1085,6 +1085,97 @@ body.motion-held *, body.motion-held *::before, body.motion-held *::after {
 .kind-badge--award { color: var(--coral); border-color: #c79a9230; }
 .tl-item--current-host .tl-card { border-color: #8fb8a830; }
 
+/* ---------------------------- 电影：待看候选 ---------------------------- */
+/* 候选片是「别人推荐、我还没看」的。视觉上刻意比正式档案轻一档：
+   底色更暗、边框更弱、海报尺寸更小，一眼能区分「这是待办的，不是档案」。 */
+
+.candidates { margin: 46px 0 10px; }
+
+.candidates__head {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 24px; flex-wrap: wrap; margin-bottom: 18px;
+}
+.candidates__head h3 { margin: 6px 0 0; font-size: 22px; letter-spacing: .01em; }
+.candidates__head p { margin: 0; max-width: 420px; color: var(--muted); font-size: 12px; line-height: 1.7; }
+
+.candidates__grid {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px;
+}
+@media (max-width: 1140px) { .candidates__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 680px) { .candidates__grid { grid-template-columns: 1fr; } }
+
+.candidate {
+  display: grid; grid-template-columns: 92px 1fr; gap: 14px;
+  padding: 12px; border: 1px dashed var(--line); border-radius: var(--radius);
+  background: linear-gradient(130deg, #ffffff02, transparent);
+  transition: border-color .3s, transform .35s var(--ease);
+}
+.candidate:hover { border-color: #8fb8a838; transform: translateY(-3px); }
+
+.candidate__cover {
+  position: relative; overflow: hidden; border-radius: 8px;
+  background: #0d1017; display: grid; place-items: center;
+  aspect-ratio: 2 / 3; align-self: start;
+}
+.candidate__cover img { width: 100%; height: 100%; object-fit: cover; }
+.candidate__cover .movie__cover-ph { font-size: 28px; }
+
+.candidate__body { display: flex; flex-direction: column; min-width: 0; }
+.candidate__title { margin: 0 0 4px; font-size: 15px; line-height: 1.35; }
+.candidate__meta { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+.candidate__tmdb { font-size: 10px; font-family: var(--mono); color: var(--violet); opacity: .85; }
+.candidate__overview {
+  margin: 8px 0 10px; font-size: 11.5px; line-height: 1.65; color: var(--muted);
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+.candidate__actions { display: flex; gap: 8px; margin-top: auto; }
+.candidate__btn {
+  flex: 1; padding: 8px 10px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--line); background: transparent; color: var(--muted);
+  font-size: 11.5px; font-family: inherit; letter-spacing: .02em;
+  transition: border-color .2s, color .2s, background .2s;
+}
+.candidate__btn:hover { border-color: #ffffff28; color: var(--fg, #e8eef6); }
+.candidate__btn--rate { border-color: #8fb8a840; color: var(--mint); }
+.candidate__btn--rate:hover { background: var(--mint); color: var(--mint-ink); border-color: var(--mint); }
+
+/* 打分弹层头部 */
+.rate__head { display: grid; grid-template-columns: 96px 1fr; gap: 16px; margin-bottom: 20px; }
+.rate__poster { width: 96px; border-radius: 8px; aspect-ratio: 2 / 3; object-fit: cover; }
+.rate__head h3 { margin: 0 0 6px; font-size: 18px; }
+.rate__overview { margin: 10px 0 0; font-size: 12px; line-height: 1.7; color: var(--muted); }
+
+/* 后台表格里的「待看」标记 */
+.chip--warn { color: var(--amber, #d8b26a); border-color: #d8b26a40; }
+
+/* ------------------------- 作品的自动分析面板 ------------------------- */
+/* 作品详情里的那组读数：后端跑 librosa 得出的快照，这里只负责摆好看。
+   数据有没有取决于后台有没有分析过，没有就整块不渲染，所以不用写空态。 */
+.analysis-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+}
+.analysis-cell {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  background: #ffffff05;
+}
+.analysis-cell__label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--faint);
+}
+.analysis-cell__value {
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  font-family: var(--mono);
+}
+
 /* ---------------------------- 打印：导出简历 ---------------------------- */
 
 @media print {

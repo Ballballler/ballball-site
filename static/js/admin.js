@@ -77,6 +77,17 @@ const RESOURCES = {
       { key: "category_id", label: "分类", type: "category", kind: "movie_genre" },
       { key: "tags", label: "标签（逗号分隔）", type: "tags", full: true },
       { key: "watched_at", label: "观看日期", type: "text", placeholder: "2024-03-18" },
+      {
+        key: "status",
+        label: "档案状态",
+        type: "select",
+        default: "watched",
+        options: [
+          { value: "watched", label: "看过（正式档案）" },
+          { value: "candidate", label: "待看（候选）" },
+        ],
+        hint: "候选片在前台单独一栏展示，打完分会自动转成「看过」。",
+      },
       { key: "sort_order", label: "排序", type: "number", default: 0 },
       { key: "verdict", label: "一句话短评", type: "textarea", full: true },
       { key: "review", label: "长评正文", type: "textarea", full: true, rows: 9 },
@@ -84,6 +95,14 @@ const RESOURCES = {
     columns: [
       { key: "title", label: "片名" },
       { key: "year", label: "年份" },
+      {
+        key: "status",
+        label: "状态",
+        render: (r) =>
+          r.status === "candidate"
+            ? el("span", { class: "chip chip--warn", text: "待看" })
+            : el("span", { class: "chip", text: "看过" }),
+      },
       { key: "rating", label: "评分" },
       { key: "category", label: "分类", render: (r) => (r.category ? r.category.name : "未分类") },
       {
@@ -150,7 +169,41 @@ const RESOURCES = {
         label: "音频",
         render: (r) => (r.audio_url ? (r.allow_download ? "可播放 / 可下载" : "仅播放") : "无"),
       },
+      {
+        key: "analysis",
+        label: "自动分析",
+        render: (r) => {
+          const a = r.analysis || {};
+          if (!a.analyzed_at) return "未分析";
+          return [a.bpm ? `${a.bpm} BPM` : "", a.key || ""].filter(Boolean).join(" · ") || "已分析";
+        },
+      },
       { key: "summary", label: "简介", clip: true },
+    ],
+    rowActions: [
+      {
+        labelFor: (r) => (r.analysis && r.analysis.analyzed_at ? "重新分析" : "自动分析"),
+        run: async (r, refresh) => {
+          if (!r.audio_url) {
+            toast("这个作品还没有音频，先上传再分析", "err");
+            return;
+          }
+          try {
+            const out = await API.post(`/api/admin/works/${r.id}/analyze`, {});
+            // rows 里存的是同一个对象引用，改它再重画，列表立刻反映新状态
+            Object.assign(r, out);
+            const a = out.analysis || {};
+            toast(
+              a.verdict
+                ? `分析完成：${a.verdict}`
+                : `分析完成：${a.bpm || "—"} BPM · ${a.key || "调性不明"}`
+            );
+            refresh();
+          } catch (err) {
+            toast(err.message, "err");
+          }
+        },
+      },
     ],
   },
 

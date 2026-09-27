@@ -165,6 +165,8 @@ class MovieOut(ORMModel):
     category: CategoryOut | None = None
     tags: list = []
     watched_at: str
+    # watched = 看过并写进档案；candidate = 候选片（还没看，留着打分做记号）
+    status: str = "watched"
     sort_order: int
     created_at: datetime
     updated_at: datetime
@@ -196,6 +198,7 @@ class MovieBrief(ORMModel):
     category: CategoryOut | None = None
     tags: list = []
     watched_at: str
+    status: str = "watched"
     sort_order: int
 
 
@@ -221,6 +224,7 @@ class MovieCreate(BaseModel):
     category_id: int | None = None
     tags: list = []
     watched_at: str = Field(default="", max_length=20)
+    status: str = Field(default="watched", pattern="^(watched|candidate)$")
     sort_order: int = 0
 
     @field_validator("title", mode="before")
@@ -254,6 +258,7 @@ class MovieUpdate(BaseModel):
     category_id: int | None = None
     tags: list | None = None
     watched_at: str | None = Field(default=None, max_length=20)
+    status: str | None = Field(default=None, pattern="^(watched|candidate)$")
     sort_order: int | None = None
 
 
@@ -274,6 +279,8 @@ class WorkOut(ORMModel):
     allow_download: bool = True
     bpm: int
     key_signature: str
+    # 自动分析快照。没跑过是 {}，前端据此显示「还没分析」
+    analysis: dict = Field(default_factory=dict)
     category_id: int | None
     category: CategoryOut | None = None
     tags: list = []

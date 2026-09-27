@@ -59,12 +59,16 @@ _EXTRA_COLUMNS: dict[str, dict[str, str]] = {
         "runtime": "INTEGER DEFAULT 0",
         "tmdb_rating": "FLOAT DEFAULT 0",
         "genres": "TEXT DEFAULT '[]'",
+        # 候选片标记。老库里的行全是「看过」，所以默认 watched 正好对。
+        "status": "TEXT DEFAULT 'watched' NOT NULL",
     },
     # 作品：音频上传后的元信息与下载开关
     "work": {
         "audio_size": "INTEGER DEFAULT 0",
         "audio_duration": "INTEGER DEFAULT 0",
         "allow_download": "BOOLEAN DEFAULT 1 NOT NULL",
+        # 音频自动分析快照（JSON）
+        "analysis": "TEXT DEFAULT '{}'",
     },
 }
 

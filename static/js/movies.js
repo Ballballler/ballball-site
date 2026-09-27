@@ -11,7 +11,243 @@ const GENGAR = `<svg viewBox="0 0 100 100" role="img" aria-label="耿鬼"><path 
 const MIMIKYU = `<svg viewBox="0 0 100 100" role="img" aria-label="迷拟Q"><path d="M30 88 C 22 70 24 40 34 24 C 42 12 58 12 66 24 C 76 40 78 70 70 88 Z" fill="#e6d7a8"/><path d="M34 24 C 40 14 60 14 66 24 C 60 20 40 20 34 24 Z" fill="#cbb87e"/><path d="M40 30 L44 44 M60 30 L56 44" stroke="#3a3a3a" stroke-width="2.4" stroke-linecap="round"/><circle cx="41" cy="52" r="3.4" fill="#2a2a2a"/><circle cx="59" cy="52" r="3.4" fill="#2a2a2a"/><path d="M44 66 Q50 71 56 66" stroke="#2a2a2a" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M72 50 L86 44 L82 58 Z" fill="#8a7a4e"/></svg>`;
 const LITWICK = `<svg viewBox="0 0 100 100" role="img" aria-label="烛光灵"><ellipse cx="50" cy="86" rx="16" ry="4" fill="#000" opacity=".3"/><rect x="38" y="42" width="24" height="44" rx="9" fill="#e8ecf2"/><path d="M50 12 C 58 22 60 30 50 40 C 40 30 42 22 50 12 Z" fill="#a58fd0"/><path d="M50 22 C 54 27 55 31 50 36 C 45 31 46 27 50 22 Z" fill="#d9c9f2"/><circle cx="44" cy="58" r="3.6" fill="#f0c93f"/><circle cx="56" cy="58" r="3.6" fill="#f0c93f"/><path d="M42 70 Q50 75 58 70" stroke="#8a90a0" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`;
 
-const state = { movies: [], categories: [], activeCategory: 0, query: "" };
+const state = {
+  movies: [],
+  candidates: [],
+  categories: [],
+  activeCategory: 0,
+  query: "",
+};
+
+/* ---------------------------- 候选片 ---------------------------- */
+/* 候选片是「别人推荐、我还没看」的片子。这一区只在动态模式（本地 / 自己的
+   服务器）下出现 —— 静态站没有后端，打不了分也删不掉，不如不显示。 */
+
+function isCandidateMode() {
+  return !isStaticMode() && state.candidates.length > 0;
+}
+
+function renderCandidates() {
+  const host = document.getElementById("movie-candidates");
+  const grid = document.getElementById("candidates-grid");
+  if (!host || !grid) return;
+  if (!isCandidateMode()) {
+    host.hidden = true;
+    grid.textContent = "";
+    return;
+  }
+  host.hidden = false;
+  grid.textContent = "";
+  const hint = document.getElementById("candidates-hint");
+  if (hint) {
+    hint.textContent = `还有 ${state.candidates.length} 部没看。打完分就算看过，会挪进正式档案；不想看的点「不看」划掉。`;
+  }
+  state.candidates.forEach((m, i) => grid.appendChild(buildCandidateCard(m, i)));
+  revealStaggered(grid);
+}
+
+function buildCandidateCard(movie, index) {
+  const cover = el("div", { class: "candidate__cover" });
+  const posterSrc = movie.poster_url || movie.poster;
+  if (posterSrc) {
+    const img = el("img", {
+      src: posterSrc,
+      alt: `${movie.title} 海报`,
+      loading: "lazy",
+      decoding: "async",
+    });
+    img.addEventListener("error", () => {
+      img.remove();
+      cover.appendChild(el("span", { class: "movie__cover-ph", text: "🎬" }));
+    });
+    cover.appendChild(img);
+  } else {
+    cover.appendChild(el("span", { class: "movie__cover-ph", text: "🎬" }));
+  }
+
+  const meta = [movie.year ? String(movie.year) : "", movie.director]
+    .filter(Boolean)
+    .join(" · ");
+  const tmdb = movie.tmdb_rating ? `TMDB ${movie.tmdb_rating}` : "";
+
+  const card = el(
+    "article",
+    { class: "glass glass--lift candidate reveal" },
+    [
+      cover,
+      el("div", { class: "candidate__body" }, [
+        el("h4", { class: "candidate__title", text: movie.title }),
+        el("div", { class: "candidate__meta", text: meta }),
+        tmdb ? el("div", { class: "candidate__tmdb", text: tmdb }) : null,
+        el("p", {
+          class: "candidate__overview",
+          text: (movie.overview || "（TMDB 没有简介）").slice(0, 96),
+        }),
+        el("div", { class: "candidate__actions" }, [
+          (() => {
+            const b = el("button", {
+              class: "candidate__btn candidate__btn--rate",
+              type: "button",
+              text: "打分",
+            });
+            b.addEventListener("click", () => openRateDialog(movie));
+            return b;
+          })(),
+          (() => {
+            const b = el("button", {
+              class: "candidate__btn",
+              type: "button",
+              text: "不看",
+            });
+            b.addEventListener("click", () => dropCandidate(movie));
+            return b;
+          })(),
+        ]),
+      ]),
+    ]
+  );
+  return card;
+}
+
+/** 打分弹层：分值 + 强度 + 推荐 + 短评，存完即转正 */
+function openRateDialog(movie) {
+  const wrap = el("div", { class: "detail" });
+  wrap.appendChild(
+    el("div", { class: "rate__head" }, [
+      (() => {
+        const img = el("img", { class: "rate__poster", alt: `${movie.title} 海报` });
+        if (movie.poster_url || movie.poster) img.src = movie.poster_url || movie.poster;
+        else img.hidden = true;
+        return img;
+      })(),
+      el("div", {}, [
+        el("h3", { text: movie.title }),
+        el("p", {
+          class: "enroll__hint",
+          text: [movie.year, movie.director, movie.runtime ? `${movie.runtime} 分钟` : ""]
+            .filter(Boolean)
+            .join(" · "),
+        }),
+        movie.overview
+          ? el("p", { class: "rate__overview", text: movie.overview.slice(0, 200) })
+          : null,
+      ]),
+    ])
+  );
+
+  const ratingInput = el("input", {
+    type: "range",
+    min: "0",
+    max: "10",
+    step: "0.5",
+    value: "7",
+    "aria-label": "我的评分，0 到 10 分",
+  });
+  const ratingOut = el("output", { class: "enroll__output", text: "7.0" });
+  ratingInput.addEventListener("input", () => {
+    ratingOut.textContent = Number(ratingInput.value).toFixed(1);
+  });
+
+  const scare = dotPicker(5, 3);
+  const recommend = dotPicker(5, 3);
+  const verdictInput = el("input", {
+    type: "text",
+    maxlength: "300",
+    placeholder: "一句话结论，例如：今年最惊喜的一部",
+    "aria-label": "一句话短判",
+  });
+  const watchedInput = el("input", {
+    type: "date",
+    value: new Date().toISOString().slice(0, 10),
+    "aria-label": "观看日期",
+  });
+  const catSelect = el("select", { "aria-label": "分类" }, [
+    el("option", { value: "", text: "沿用 TMDB 给的分类" }),
+    ...state.categories.map((c) => el("option", { value: String(c.id), text: c.name })),
+  ]);
+  if (movie.category_id) {
+    [...catSelect.options].forEach((o) => {
+      if (o.value === String(movie.category_id)) o.selected = true;
+    });
+  }
+
+  wrap.appendChild(
+    el("div", { class: "enroll__field" }, [
+      el("label", { class: "enroll__label", text: "我的评分" }),
+      el("div", { class: "enroll__range" }, [ratingInput, ratingOut]),
+    ])
+  );
+  wrap.appendChild(
+    el("div", { class: "enroll__field" }, [
+      el("label", { class: "enroll__label", text: "恐怖强度（1 最温和，5 最吓人）" }),
+      scare.node,
+    ])
+  );
+  wrap.appendChild(
+    el("div", { class: "enroll__field" }, [
+      el("label", { class: "enroll__label", text: "推荐指数" }),
+      recommend.node,
+    ])
+  );
+  wrap.appendChild(
+    el("div", { class: "enroll__field" }, [
+      el("label", { class: "enroll__label", text: "一句话短判" }),
+      verdictInput,
+    ])
+  );
+  wrap.appendChild(
+    el("div", { class: "enroll__field" }, [
+      el("label", { class: "enroll__label", text: "观看日期" }),
+      watchedInput,
+    ])
+  );
+  wrap.appendChild(
+    el("div", { class: "enroll__field" }, [
+      el("label", { class: "enroll__label", text: "分类" }),
+      catSelect,
+    ])
+  );
+
+  const saveBtn = el("button", { class: "searchbar__add", type: "button", text: "记下来，转正" });
+  const skipBtn = el("button", { class: "searchbar__clear", type: "button", text: "先不打分" });
+  skipBtn.addEventListener("click", () => closeDetail());
+  saveBtn.addEventListener("click", async () => {
+    saveBtn.disabled = true;
+    saveBtn.textContent = "保存中…";
+    try {
+      await API.post(`/api/admin/movies/${movie.id}/rate`, {
+        rating: Number(ratingInput.value),
+        scare_level: scare.get(),
+        recommend_level: recommend.get(),
+        verdict: verdictInput.value.trim(),
+        watched_at: watchedInput.value,
+        category_id: catSelect.value ? Number(catSelect.value) : null,
+      });
+      toast(`《${movie.title}》已转正进档案`);
+      closeDetail();
+      await reloadMovies();
+    } catch (err) {
+      toast(err.message, "err");
+      saveBtn.disabled = false;
+      saveBtn.textContent = "记下来，转正";
+    }
+  });
+  wrap.appendChild(el("div", { class: "enroll__actions" }, [skipBtn, saveBtn]));
+  openDetailWith(wrap, "看完就打个分");
+  saveBtn.focus();
+}
+
+/** 不看这部：直接从候选里删掉 */
+async function dropCandidate(movie) {
+  if (!window.confirm(`把《${movie.title}》从候选里删掉？`)) return;
+  try {
+    await API.del(`/api/admin/movies/${movie.id}`);
+    toast(`已划掉《${movie.title}》`);
+    await reloadMovies();
+  } catch (err) {
+    toast(err.message, "err");
+  }
+}
 
 /* ---------------------------- 主视觉 ---------------------------- */
 
@@ -29,15 +265,17 @@ function renderStage() {
 function renderStats() {
   const host = document.getElementById("movie-stats");
   if (!host) return;
-  const n = state.movies.length;
-  const avg = n ? (state.movies.reduce((s, m) => s + m.rating, 0) / n).toFixed(1) : "0.0";
-  const top = state.movies.reduce((a, m) => (m.scare_level > (a?.scare_level || 0) ? m : a), null);
+  // 统计只算正式档案：候选片还没看，混进来会把平均分和「最吓人的」带偏
+  const watched = state.movies.filter((m) => m.status !== "candidate");
+  const n = watched.length;
+  const avg = n ? (watched.reduce((s, m) => s + m.rating, 0) / n).toFixed(1) : "0.0";
+  const top = watched.reduce((a, m) => (m.scare_level > (a?.scare_level || 0) ? m : a), null);
   host.textContent = "";
   const rows = [
     ["收录影片", String(n)],
     ["平均评分", avg],
     ["最吓人的", top ? `《${top.title}》` : "—"],
-    ["分类数", String(state.categories.length)],
+    ["待看候选", String(state.candidates.length)],
   ];
   rows.forEach(([k, v]) => {
     host.appendChild(
@@ -100,7 +338,6 @@ function visibleMovies() {
     return matchesQuery(m, state.query);
   });
 }
-
 function renderGrid() {
   const grid = document.getElementById("movie-grid");
   grid.textContent = "";
@@ -460,6 +697,13 @@ function openEnrollDialog(initialQuery = "") {
 
 /* ---------------------------- 启动 ---------------------------- */
 
+/** 把接口返回的整份列表拆成「正式档案」和「候选片」两类 */
+function splitMovies(all) {
+  const list = all || [];
+  state.movies = list.filter((m) => m.status !== "candidate");
+  state.candidates = list.filter((m) => m.status === "candidate");
+}
+
 /** 存进一部新片之后把列表拉回来（静态站没有后端，这条只在动态模式走到） */
 async function reloadMovies() {
   try {
@@ -467,10 +711,11 @@ async function reloadMovies() {
       API.get("/api/movies"),
       API.get("/api/categories?kind=movie_genre"),
     ]);
-    state.movies = movies || [];
+    splitMovies(movies);
     state.categories = categories || [];
     renderStats();
     renderFilters();
+    renderCandidates();
     renderGrid();
   } catch (err) {
     toast(`刷新失败：${err.message}`, "err");
@@ -483,12 +728,13 @@ async function boot() {
       API.get("/api/movies"),
       API.get("/api/categories?kind=movie_genre"),
     ]);
-    state.movies = movies || [];
+    splitMovies(movies);
     state.categories = categories || [];
     renderStage();
     renderStats();
     renderFilters();
     initSearchbar();
+    renderCandidates();
     renderGrid();
     // 区块的显示与顺序由后台「页面区块」决定
     await applyPageSections("movies", {

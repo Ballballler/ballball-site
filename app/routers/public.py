@@ -76,12 +76,19 @@ def list_categories(kind: str | None = Query(default=None)) -> list[Category]:
 def list_movies(
     category_id: int | None = Query(default=None),
     keyword: str | None = Query(default=None),
+    status: str | None = Query(
+        default=None,
+        pattern="^(watched|candidate)$",
+        description="watched = 正式档案；candidate = 待看候选。不传则两者都返回。",
+    ),
     limit: int = Query(default=100, ge=1, le=500),
 ) -> list[Movie]:
     with SessionLocal() as db:
         stmt = select(Movie).order_by(Movie.sort_order, Movie.id)
         if category_id:
             stmt = stmt.where(Movie.category_id == category_id)
+        if status:
+            stmt = stmt.where(Movie.status == status)
         if keyword:
             like = f"%{keyword.strip()}%"
             stmt = stmt.where(Movie.title.like(like))

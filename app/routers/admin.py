@@ -8,7 +8,8 @@ from datetime import datetime
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from ..config import (
@@ -80,6 +81,7 @@ from ..schemas import (
     WorkUpdate,
 )
 from .. import tmdb
+from ..audio_analysis import AudioAnalysisError, analyze_work_audio, available
 from .deps import require_admin
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -296,6 +298,73 @@ def update_movie(item_id: int, payload: MovieUpdate, _: bool = require_admin) ->
         db.commit()
         db.refresh(item)
         return item
+
+
+# --------------------- 电影：候选片打分与清理 ---------------------
+# 候选片（status='candidate'）是「别人推荐、我还没看」的片子。站长看完之后
+# 在这里打分，片子就从候选转正成正式档案；不看的直接删。
+# 这一组只动 candidate，绝不碰 watched 的正式档案。
+
+
+class RateIn(BaseModel):
+    """给候选片打分并转正。只暴露「评价」相关的字段，资料字段由 TMDB 提供。"""
+
+    rating: float = Field(default=7.0, ge=0, le=10)
+    scare_level: int = Field(default=3, ge=0, le=5)
+    recommend_level: int = Field(default=3, ge=0, le=5)
+    verdict: str = Field(default="", max_length=300)
+    watched_at: str = Field(default="", max_length=20)
+    category_id: int | None = None
+    tags: list | None = None
+
+
+@router.post("/movies/{item_id}/rate", response_model=MovieOut)
+def rate_movie(item_id: int, payload: RateIn, _: bool = require_admin) -> Movie:
+    """打分 = 看过 = 转正。候选片打完分就进正式档案。"""
+    with SessionLocal() as db:
+        item = db.get(Movie, item_id)
+        if item is None:
+            raise HTTPException(status_code=404, detail="电影不存在")
+        item.rating = payload.rating
+        item.scare_level = payload.scare_level
+        item.recommend_level = payload.recommend_level
+        item.verdict = payload.verdict
+        item.watched_at = payload.watched_at or datetime.now().strftime("%Y-%m-%d")
+        if payload.category_id is not None:
+            item.category_id = payload.category_id or None
+        if payload.tags is not None:
+            # 转正后不该再挂着「候选」这个标签
+            item.tags = [t for t in payload.tags if t != "候选"]
+        else:
+            item.tags = [t for t in (item.tags or []) if t != "候选"]
+        item.status = "watched"
+        db.commit()
+        db.refresh(item)
+        return item
+
+
+@router.delete("/movies/candidates", response_model=OkOut)
+def purge_candidates(
+    keep_rated: bool = Query(
+        default=True,
+        description="true 只删没打过分（rating=0）的候选；false 全删。",
+    ),
+    _: bool = require_admin,
+) -> OkOut:
+    """清掉候选片。默认保留已打分的，避免误删刚看完的那几部。"""
+    with SessionLocal() as db:
+        stmt = select(Movie).where(Movie.status == "candidate")
+        if keep_rated:
+            stmt = stmt.where(Movie.rating == 0)
+        doomed = list(db.scalars(stmt).all())
+        titles = [m.title for m in doomed]
+        for m in doomed:
+            db.delete(m)
+        db.commit()
+        if not titles:
+            return OkOut(message="没有需要清理的候选片")
+        return OkOut(message=f"已清理 {len(titles)} 部候选片：{'、'.join(titles[:5])}"
+                             + ("…" if len(titles) > 5 else ""))
 
 
 # --------------------- 电影：从 TMDB 导入 ---------------------
@@ -567,6 +636,49 @@ def update_work(item_id: int, payload: WorkUpdate, _: bool = require_admin) -> W
             raise HTTPException(status_code=404, detail="作品不存在")
         for field, value in payload.model_dump(exclude_unset=True).items():
             setattr(item, field, value)
+        db.commit()
+        db.refresh(item)
+        return item
+
+
+@router.get("/works/analyze/status")
+def audio_analysis_status(_: bool = require_admin) -> dict:
+    """告诉后台「能不能自动分析」。缺依赖时前端要把按钮按掉，别让站长白点。"""
+    ok, engine = available()
+    return {"available": ok, "engine": engine}
+
+
+@router.post("/works/{item_id}/analyze", response_model=WorkOut)
+def analyze_work(item_id: int, _: bool = require_admin) -> Work:
+    """对这个作品的音频跑一遍分析，结果写进 work.analysis。
+
+    只补不覆盖 composer 已经手写的部分：BPM 和调性原来为空才自动填。
+    分析要好几秒，失败一律用 400 把原因原话说回去。
+    """
+    with SessionLocal() as db:
+        item = db.get(Work, item_id)
+        if item is None:
+            raise HTTPException(status_code=404, detail="作品不存在")
+        audio_url = item.audio_url
+        had_bpm = item.bpm
+        had_key = item.key_signature
+
+    try:
+        result = analyze_work_audio(audio_url)
+    except AudioAnalysisError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:  # librosa 内部炸了也要说人话
+        raise HTTPException(status_code=400, detail=f"分析失败：{exc}")
+
+    with SessionLocal() as db:
+        item = db.get(Work, item_id)
+        item.analysis = result
+        if not had_bpm and result.get("bpm"):
+            item.bpm = int(result["bpm"])
+        if not had_key and result.get("key"):
+            item.key_signature = result["key"]
+        if result.get("duration"):
+            item.audio_duration = int(round(result["duration"]))
         db.commit()
         db.refresh(item)
         return item

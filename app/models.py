@@ -144,6 +144,13 @@ class Movie(Base, TimestampMixin):
     watched_at: Mapped[str] = mapped_column(String(20), default="", nullable=False)
     sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
+    # 档案状态：watched = 看过并写进档案（默认，现有数据都是这一类）
+    #           candidate = 候选片，还没看，进来只为让站长打分做记号
+    # 候选片在前台单独一栏展示，不混进正式档案的统计里。
+    status: Mapped[str] = mapped_column(
+        String(16), default="watched", server_default="watched", nullable=False
+    )
+
     # selectin：查询时一并抓出分类，避免响应序列化时会话已关闭导致 DetachedInstanceError
     category: Mapped[Category | None] = relationship(
         back_populates="movies", lazy="selectin"
@@ -192,6 +199,10 @@ class Work(Base, TimestampMixin):
     allow_download: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     bpm: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     key_signature: Mapped[str] = mapped_column(String(20), default="", nullable=False)
+    # 音频自动分析的结果快照：{bpm, key, rms_db, dynamic_range_db, waveform, labels, ...}
+    # 放在这里而不是运行时算，是因为静态站没有 Python，导出来必须自带数据。
+    # 缺 librosa 时为 {}，前端按「没分析过」处理。
+    analysis: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
     category_id: Mapped[int | None] = mapped_column(
         ForeignKey("category.id", ondelete="SET NULL"), nullable=True
     )

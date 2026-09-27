@@ -98,6 +98,21 @@
 
         <!-- 电影卡片网格 -->
         <div class="movie-grid" id="movie-grid"></div>
+
+        <!-- 候选片：别人推荐、我还没看的。打完分就转正进档案，不看就删。
+             放在正式档案后面：先看完的，再摆待看的，阅读顺序才对 -->
+        <section class="candidates" id="movie-candidates" hidden>
+          <div class="candidates__head">
+            <div>
+              <div class="eyebrow"><span class="section-number">02</span>TO WATCH</div>
+              <h3>待看的片子</h3>
+            </div>
+            <p id="candidates-hint">
+              打完分就算看过，会挪进上面的正式档案；不想看的点「不看」划掉。
+            </p>
+          </div>
+          <div class="candidates__grid" id="candidates-grid"></div>
+        </section>
       </section>
     </main>
 

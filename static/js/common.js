@@ -636,6 +636,63 @@ function waveform() {
   return w;
 }
 
+/* 自动分析面板：数据由后端跑 librosa 得出后存在 work.analysis 里。
+   静态站没有 Python，所以这里只渲染快照，从不自己算。 */
+function buildWorkAnalysis(work) {
+  const a = work.analysis || {};
+  if (!a.analyzed_at) return [];
+
+  const rows = [
+    a.bpm ? { label: "速度", value: `${a.bpm} BPM` } : null,
+    a.key ? { label: "调性", value: `${a.key}（可信 ${Math.round((a.key_confidence || 0) * 100)}%）` } : null,
+    Number.isFinite(a.rms_db)
+      ? { label: "平均响度", value: `${a.rms_db.toFixed(1)} dB` }
+      : null,
+    Number.isFinite(a.dynamic_range_db)
+      ? { label: "动态范围", value: `${a.dynamic_range_db.toFixed(1)} dB` }
+      : null,
+    Number.isFinite(a.brightness_hz)
+      ? { label: "频谱重心", value: `${Math.round(a.brightness_hz)} Hz` }
+      : null,
+    Number.isFinite(a.onset_rate)
+      ? { label: "起音密度", value: `${a.onset_rate.toFixed(1)} /秒` }
+      : null,
+  ].filter(Boolean);
+
+  const grid = el(
+    "div",
+    { class: "analysis-grid" },
+    rows.map((r) =>
+      el("div", { class: "analysis-cell" }, [
+        el("div", { class: "analysis-cell__label", text: r.label }),
+        el("div", { class: "analysis-cell__value", text: r.value }),
+      ])
+    )
+  );
+
+  const parts = [
+    el("div", { class: "detail__section" }, [
+      el("h3", { text: "自动分析" }),
+      a.verdict ? el("p", { class: "review", text: a.verdict }) : null,
+      Array.isArray(a.labels) && a.labels.length
+        ? el(
+            "div",
+            { class: "chips", style: { marginTop: "10px" } },
+            a.labels.map((t) => el("span", { class: "chip chip--dot", text: t }))
+          )
+        : null,
+      grid,
+      el("p", {
+        class: "field__hint",
+        style: { marginTop: "10px" },
+        text: `${a.engine || "librosa"} 在后台跑出来的，${String(a.analyzed_at || "").slice(0, 10)} 那次。数字只作参考，耳朵说了算。`,
+      }),
+    ].filter(Boolean)),
+  ];
+
+  return parts;
+}
+
 function openWorkDetail(work) {
   const disc = el("div", { class: "detail__poster detail__disc" }, [
     el(
@@ -706,6 +763,8 @@ function openWorkDetail(work) {
       el("p", { class: "review review--idea", text: work.summary })
     );
   }
+
+  parts.push(...buildWorkAnalysis(work));
 
   if (work.audio_url) {
     const player = el("audio", {

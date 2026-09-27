@@ -262,3 +262,35 @@ SMOKE_ADMIN_PASSWORD='你的口令' node smoke.js
 ```bash
 ffmpeg -i input.mp4 -vn -c:a libmp3lame -q:a 2 output.mp3
 ```
+
+### 恐怖片候选片单（待看 → 打分转正）
+
+电影档案里除了「看过的」正式档案，还有一类 **候选片**（`status='candidate'`）：
+别人推荐、还没看的片子。它们在前台电影页单独一栏「02 TO WATCH / 待看的片子」展示，
+每张卡上有两个按钮 —— **打分**（打分即看过，自动转正进正式档案）和 **不看**（直接删掉）。
+
+**候选片怎么进来的**：`tools/fetch_horror_candidates.py` 从 TMDB 官网抓真实元数据。
+
+```bash
+# 1. 抓元数据（改片单改脚本顶部 SLATE 列表）
+.venv/Scripts/python.exe tools/fetch_horror_candidates.py
+
+# 2. 导入电影档案（标成候选）
+.venv/Scripts/python.exe tools/import_horror_candidates.py --dry-run
+.venv/Scripts/python.exe tools/import_horror_candidates.py
+.venv/Scripts/python.exe tools/import_horror_candidates.py --replace  # 清掉旧候选再导
+```
+
+导入脚本跟 `import_two_works.py` 一样安全：跑前自动备份 `site.db`、`--dry-run` 不写库、
+按 `tmdb_id` 判重（重跑安全）、**绝不碰 `status='watched'` 的正式档案**。
+
+**为什么不用 `app/tmdb.py`**：本机 `api.themoviedb.org` 被网络策略挡住（直连 ReadTimeout、
+代理端口未开），httpx 走不通。改用 TMDB 官网自己的前端接口
+`www.themoviedb.org/search/remote/movie?query=<片名>&language=zh-CN` ——
+返回的 JSON 字段和 v3 API 完全一致，不需要 key。详情页补导演 / 片长 / 中文类型。
+
+⚠️ **非英语片名必须写死 tmdb_id**：搜索接口对这个召回不稳。实测「Exhuma」并到了
+`Exhumator`(1300292)、「The Wailing」并到了 `The Stranger`(1413713)，都是完全无关的片子。
+所以 `SLATE` 里这类条目写成三元组 `("Exhuma", 2024, 838209)`。
+
+**清理**：后台 `DELETE /api/admin/movies/candidates`（默认只删没打过分的，`keep_rated=false` 全删）。
