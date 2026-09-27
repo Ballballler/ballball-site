@@ -309,6 +309,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="导出静态站点供 GitHub Pages 使用")
     parser.add_argument("--out", default="dist", help="输出目录，默认 dist")
     parser.add_argument(
+        "--clean",
+        action="store_true",
+        help="导出前先清空输出目录。默认不清（写入是覆盖式的），"
+        "只有在怀疑有残留旧文件时才需要。",
+    )
+    parser.add_argument(
         "--site-url",
         default=os.getenv("SITE_URL", "https://ballballler.github.io/ballball-site"),
         help="线上地址，用于 sitemap 与 robots",
@@ -316,15 +322,15 @@ def main() -> None:
     args = parser.parse_args()
 
     dist = ROOT / args.out
-    # 清空的写法要小心：直接 shutil.rmtree(dist) 在受限环境里会被
-    # 「批量删除目录」的策略拦下（一次删掉整个 dist 树）。逐项删内容、
-    # 保留目录本身，效果一样但不会被误判成危险操作。
-    if dist.exists():
-        for item in dist.iterdir():
-            if item.is_dir() and not item.is_symlink():
-                shutil.rmtree(item)
-            else:
-                item.unlink()
+    # 默认**不清空** dist：下面所有写入都是覆盖式的（copy2 / copytree(dirs_exist_ok) /
+    # write_text），旧文件留在原地不影响结果 —— 文件名都带内容指纹，内容变了
+    # 就会生成新文件名，HTML 引用的也是新名字。
+    #
+    # 之前这里无条件 shutil.rmtree(dist)，在受限执行环境里会被「批量删除」策略
+    # 拦下（沙箱按递归展开后的文件数计数，dist 全量 50+ 文件必超阈值），
+    # 导致 deploy/pages.sh 第一步就中止。需要彻底清理时显式加 --clean。
+    if args.clean and dist.exists():
+        shutil.rmtree(dist)
     dist.mkdir(parents=True, exist_ok=True)
 
     print(f"导出目标：{dist}")
