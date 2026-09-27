@@ -20,13 +20,21 @@ echo ==^> 1/3 导出静态站
 ".venv\Scripts\python.exe" tools\export_static.py --out dist --site-url "%SITE_URL%"
 if errorlevel 1 goto :fail
 
-echo ==^> 2/3 组装 gh-pages 分支
-set "TMP=%TEMP%\ballball-pages-%RANDOM%"
-if exist "%TMP%" rmdir /s /q "%TMP%"
-mkdir "%TMP%"
-xcopy /E /I /Y /Q dist "%TMP%" >nul
+REM 下划线开头的目录会被 Jekyll 吞掉，静态站里没有它反而更稳
+if not exist "dist\.nojekyll" type nul >"dist\.nojekyll"
 
-pushd "%TMP%"
+REM 先把远端真实地址取出来：下面那个临时仓库是新 init 的，里面没有 origin
+for /f "delims=" %%i in ('git remote get-url %REMOTE% 2^>nul') do set "REMOTE_URL=%%i"
+if "%REMOTE_URL%"=="" set "REMOTE_URL=%REMOTE%"
+
+echo ==^> 2/3 组装 gh-pages 分支
+REM 别叫 TMP —— 那是系统变量，盖掉会让 git 用错临时目录
+set "WORKDIR=%TEMP%\ballball-pages-%RANDOM%"
+if exist "%WORKDIR%" rmdir /s /q "%WORKDIR%"
+mkdir "%WORKDIR%"
+xcopy /E /I /Y /Q dist "%WORKDIR%" >nul
+
+pushd "%WORKDIR%"
 git init -q
 git checkout -q -b %BRANCH%
 git add -A
@@ -36,11 +44,12 @@ if errorlevel 1 (
   goto :fail
 )
 
-echo ==^> 3/3 推送到 %REMOTE% 的 %BRANCH%
-git push --force %REMOTE% %BRANCH%
+echo ==^> 3/3 推送到 %BRANCH%（%REMOTE_URL%）
+git remote add origin "%REMOTE_URL%"
+git push --force origin %BRANCH%
 set RC=%ERRORLEVEL%
 popd
-rmdir /s /q "%TMP%"
+rmdir /s /q "%WORKDIR%"
 
 if not "%RC%"=="0" goto :fail
 
