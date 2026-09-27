@@ -190,22 +190,53 @@ function renderAbout(p) {
 }
 
 function renderMoviesPreview() {
-  const top = state.movies.slice(0, 3);
+  // 首页这块是「精选」，必须和电影页看到的同一批：
+  //  1. candidate 是后台的待看清单（没评分、没短评），电影页会过滤掉它们，
+  //     首页要是照单全收，就会出现「首页有、详情页找不到」的错位
+  //  2. 再按评分挑最值得看的 3 部，而不是抓数据库里排最前的 3 条
+  const watched = state.movies.filter((m) => m.status !== "candidate");
+  const top = watched.slice().sort(byScoreDesc).slice(0, 3);
+
+  if (!top.length) {
+    return sectionWrap(
+      "movies-preview",
+      heading(3, "NOTES FROM THE DARK", "怕黑，也想多看一眼。", ""),
+      el("p", { class: "muted", text: "还没看过并写下评分的片子。看完一部再来，这里会自动亮起来。" })
+    );
+  }
+
   // 首页直接开详情弹层，不再跳页
   const grid = el("div", { class: "movie-grid" },
     top.map((m) => buildMovieCard(m, openMovieDetail))
   );
+  const total = watched.length;
   const box = el("div", {}, [
     grid,
     el("div", { style: { marginTop: "22px" } }, [
-      el("a", { class: "button", href: "movies.html", text: "进入恐怖电影档案 ↗" }),
+      el("a", {
+        class: "button",
+        href: "movies.html",
+        text: `看全部 ${total} 部恐怖片档案 ↗`,
+      }),
     ]),
   ]);
   return sectionWrap(
     "movies-preview",
-    heading(3, "NOTES FROM THE DARK", "怕黑，也想多看一眼。", "主观评价，欢迎留下不同的看法。"),
+    heading(
+      3,
+      "NOTES FROM THE DARK",
+      "怕黑，也想多看一眼。",
+      `从 ${total} 部里挑评分最高的 ${top.length} 部，主观评价，欢迎留下不同的看法。`
+    ),
     box
   );
+}
+
+/** 评分降序；同分按标题稳定排序，避免每次刷新顺序乱跳 */
+function byScoreDesc(a, b) {
+  const diff = (b.rating || 0) - (a.rating || 0);
+  if (diff) return diff;
+  return String(a.title || "").localeCompare(String(b.title || ""), "zh-Hans-CN");
 }
 
 function renderWorksPreview() {
