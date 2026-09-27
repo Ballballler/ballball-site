@@ -273,14 +273,14 @@ INTERESTS = [
     dict(
         title="vibe coding",
         icon="💻",
-        description="用 Python 把想法落成能跑的东西，日常靠 Codex / Hermes / Workbuddy 这些 Agent 提效。比起炫技，更在意它是不是真的有用。",
+        description="拿 Python 把想法落成能跑的东西，重复的环节交给 Codex、Hermes、Workbuddy 这些 Agent。炫技没意思，自己天天用得上才算。",
         link="",
         accent="#34d399",
     ),
     dict(
         title="写东西",
         icon="✍️",
-        description="影评、随笔、零散的想法。写下来才算真的想过一遍。",
+        description="影评、随笔、零散的念头。没写下来就不算想过。",
         link="",
         accent="#fbbf24",
     ),
@@ -324,8 +324,8 @@ PROFILE = dict(
         },
         {
             "icon": "🛠️",
-            "title": "自己做自己维护",
-            "text": "这个站从后端到前端都是自己写的，跑在自己的服务器上。",
+            "title": "自己给自己写工具",
+            "text": "这个站从后端到三维都是自己写的。想要什么功能，当晚就能上线。",
         },
     ],
 )

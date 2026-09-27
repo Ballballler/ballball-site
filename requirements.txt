@@ -7,3 +7,7 @@ python-multipart==0.0.20
 python-dotenv==1.0.1
 # TMDB 元数据抓取（只取文本与图片地址，不下载图片）
 httpx==0.28.1
+# 音乐自动分析（速度 / 调性 / 响度 / 明暗）。缺了它站点照常跑，
+# 只是后台的「自动分析」按钮会提示不可用。.mp3 需要 ffmpeg 兜底解码。
+librosa>=0.11
+soundfile>=0.13
