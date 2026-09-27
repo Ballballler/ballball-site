@@ -420,6 +420,14 @@
     display: none !important;
   }
 
+  /* 入场动画靠 IntersectionObserver 触发：没滚动到的段落 opacity 还是 0，
+     直接打印会是一段段空白 —— 打印时一律显形。 */
+  .reveal,
+  .reveal.in-view {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
   body {
     background: #fff;
     color: #111;

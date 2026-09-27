@@ -286,8 +286,12 @@ function renderStats() {
     ["收录影片", String(n)],
     ["平均评分", avg],
     ["最吓人的", top ? `《${top.title}》` : "—"],
-    ["待看候选", String(state.candidates.length)],
   ];
+  // 候选为 0 时（比如线上只读版）不渲染这行：读者看到「待看候选 0」只会困惑——
+  // 这栏为什么存在？数据被剔掉之后尤其如此，本地 60 / 线上 0 像两个站。
+  if (state.candidates.length) {
+    rows.push(["待看候选", String(state.candidates.length)]);
+  }
   rows.forEach(([k, v]) => {
     host.appendChild(
       el("div", { style: { display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #ffffff0a" } }, [

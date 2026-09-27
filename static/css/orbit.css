@@ -434,10 +434,14 @@ button.primary, .button.primary, .btn--primary {
 .music-hero { display: grid; grid-template-columns: auto 1fr; gap: 34px; align-items: center; margin-bottom: 26px; }
 .music-hero__disc { position: relative; display: grid; place-items: center; }
 .record--hero { height: 270px; width: 270px; }
+/* 唱臂：锚在 .record--hero（position:relative 的 270px 圆盘）上，
+   top/right 以唱片边缘为参照 —— 之前挂在外层 disc 容器上，容器比唱片宽，
+   唱臂会悬在半空、和唱片脱节。 */
 .music-hero__tone {
-  position: absolute; right: -8px; top: 12px; width: 3px; height: 108px;
+  position: absolute; right: -14px; top: 14px; width: 3px; height: 108px;
   background: linear-gradient(180deg, #d6dbe4, #8a94a3);
   transform: rotate(24deg); transform-origin: top; border-radius: 3px;
+  z-index: 1;
 }
 .music-hero__tone::before {
   content: ""; position: absolute; top: -8px; left: -6px; width: 15px; height: 15px;
@@ -1186,6 +1190,9 @@ body.motion-held *, body.motion-held *::before, body.motion-held *::after {
   .section { border: 0; padding: 10px 0; }
   .journey__step, .tl-item { break-inside: avoid; border-color: #ccc; }
   .journey__text, .tl-item p { color: #333; }
+  /* 入场动画依赖 IntersectionObserver —— 没滚动到的段落 opacity 还是 0，
+     打出来就是一段段空白。打印时一律显形。 */
+  .reveal { opacity: 1 !important; transform: none !important; }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

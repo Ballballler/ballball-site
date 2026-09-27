@@ -24,7 +24,9 @@
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="stylesheet" href="css/fonts.css" />
     <link rel="stylesheet" href="css/orbit.css" />
-  </head>
+    <!-- 无 JS 兜底：入场动画靠 IntersectionObserver，禁 JS 时内容必须直接可见 -->
+  <noscript><style>.reveal{opacity:1 !important;transform:none !important}</style></noscript>
+</head>
   <body>
     <a class="skip" href="#music">跳到正文</a>
 
@@ -60,8 +62,9 @@
           <div class="music-hero__disc" id="work-hero">
             <div class="record record--hero">
               <div class="record-label">BALLBALL<br />SIDE A</div>
+              <!-- 唱臂挂在唱片上而不是外层容器：容器比唱片宽，挂外面会悬在半空 -->
+              <div class="music-hero__tone"></div>
             </div>
-            <div class="music-hero__tone"></div>
           </div>
           <div class="music-hero__side">
             <div class="glass music-hero__stats" id="work-stats"></div>
