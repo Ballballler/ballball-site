@@ -50,8 +50,8 @@ function renderCandidates() {
   const hint = document.getElementById("candidates-hint");
   if (hint) {
     hint.textContent = state.candidateCategory
-      ? `这一栏有 ${shown.length} 部。打完分就算看过，会挪进正式档案；不想看的点「不看」划掉。`
-      : `还有 ${shown.length} 部没看。打完分就算看过，会挪进正式档案；不想看的点「不看」划掉。`;
+      ? `当前显示 ${shown.length} 部。看完后添加评分和短评，它就会进入观影档案。`
+      : `待看清单里有 ${shown.length} 部影片。看完后补上评分和短评，完成这次观影记录。`;
   }
   shown.forEach((m, i) => grid.appendChild(buildCandidateCard(m, i)));
   revealStaggered(grid);
@@ -420,7 +420,7 @@ function renderSearchStatus(hits) {
   const q = state.query.trim();
   bar.classList.toggle("searchbar__status--empty", Boolean(q) && hits === 0);
   if (!q) {
-    bar.textContent = `档案里共 ${state.movies.length} 部，输个片名试试。`;
+    bar.textContent = `档案收录 ${state.movies.length} 部影片。输入片名、原名或导演开始搜索。`;
     return;
   }
   if (hits > 0) {
@@ -429,10 +429,10 @@ function renderSearchStatus(hits) {
   }
   // 没命中：本地能建档就给一条直达路径，静态站只能说明原因
   if (isStaticMode()) {
-    bar.textContent = `档案里没有「${q}」。这是线上只读版，新片要回到本地后台加。`;
+    bar.textContent = `暂未找到「${q}」。当前页面为只读版本，新增影片需在站点后台完成。`;
     return;
   }
-  bar.textContent = `档案里没有「${q}」。点右边「登记一部」，直接去 TMDB 搜它。`;
+  bar.textContent = `暂未找到「${q}」。可以添加观影记录，并从 TMDB 检索影片信息。`;
 }
 
 function initSearchbar() {

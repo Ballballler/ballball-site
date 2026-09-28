@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>简历 · Ballball 的主页</title>
+    <title>简历｜内容运营、产品思维与全栈实践 · Ballball</title>
     <meta
       name="description"
-      content="Ballball 的简历：一步步走过来的成长路径，教育与经历，技能三维分布。可打印为 PDF。"
+      content="Ballball 的经历与能力：成长路径、技能、工作、项目和教育背景。支持打印或保存为 PDF。"
     />
     <meta name="theme-color" content="#070b12" />
     <meta name="color-scheme" content="dark" />
@@ -15,8 +15,8 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Ballball 的主页" />
-    <meta property="og:title" content="简历 · Ballball 的主页" />
-    <meta property="og:description" content="我走过的，和正在走的。" />
+    <meta property="og:title" content="简历｜Ballball 的经历与能力" />
+    <meta property="og:description" content="内容运营、产品思维与全栈实践：记录每一步积累，也展示它们如何彼此连接。" />
     <meta property="og:url" content="/resume.html" />
     <meta property="og:image" content="/og-image.png" />
     <meta property="og:image:width" content="1200" />
@@ -27,7 +27,7 @@
     <!-- 无 JS 兜底：入场动画靠 IntersectionObserver，禁 JS 时内容必须直接可见 -->
   <noscript><style>.reveal{opacity:1 !important;transform:none !important}</style></noscript>
 </head>
-  <body>
+  <body class="resume-page">
     <a class="skip" href="#journey">跳到正文</a>
 
     <header class="topbar">
@@ -54,8 +54,10 @@
           <div class="eyebrow"><span class="dot"></span>RESUME / A PATH IN PROGRESS</div>
           <h1 id="resume-name">Ballball</h1>
           <p class="hero__tagline" id="resume-headline"></p>
+          <p class="resume-positioning">标准化 <span>×</span> 数据验证 <span>×</span> 端到端交付</p>
           <p class="hero-copy-p" id="resume-intro"></p>
           <div class="chips resume-contacts" id="resume-contacts" style="margin-top: 20px"></div>
+          <div class="resume-kv" id="resume-kv" aria-label="简历概览"></div>
           <div class="hero-actions no-print">
             <button class="button primary" type="button" id="btn-print">打印 / 存为 PDF ↗</button>
             <a class="button" href="index.html">回到首页 ↑</a>
@@ -65,6 +67,11 @@
 
         <div class="stage resume-stage">
           <div class="stage-caption">FIG. 01 — SKILLS IN ORBIT</div>
+          <div class="resume-stage__caption" aria-hidden="true">
+            <span>BUILD WITH CURIOSITY</span>
+            <i></i>
+            <span>LEARN IN PUBLIC</span>
+          </div>
           <div class="orbit" aria-hidden="true"></div>
           <div class="orbit second" aria-hidden="true"></div>
           <div id="skill-sphere" class="reveal"></div>
@@ -77,9 +84,9 @@
           <div class="section-heading reveal">
             <div>
               <div class="eyebrow"><span class="section-number">01</span>A PATH IN PROGRESS</div>
-              <h2>一步步往前走。</h2>
+              <h2>把转向，变成自己的方法。</h2>
             </div>
-            <p>把真实的步子留在这里。每一级只记三件事：卡在哪、怎么走、得到什么。</p>
+            <p>每一段经历都留下一个可复用的习惯：拆解问题、验证判断、把事情交付出去。</p>
           </div>
           <div class="journey" id="journey-path"></div>
         </div>
@@ -91,9 +98,9 @@
           <div class="section-heading reveal">
             <div>
               <div class="eyebrow"><span class="section-number">02</span>CAPABILITIES</div>
-              <h2>技能的三维分布。</h2>
+              <h2>能力，是做过之后留下的东西。</h2>
             </div>
-            <p>上面的球是三维的，可以拖。下面是分组的熟练度。</p>
+            <p>从内容质量到代码实现，按领域查看正在使用、持续加深的能力。</p>
           </div>
           <div class="skill-bars" id="skill-bars"></div>
         </div>
@@ -105,8 +112,8 @@
           <div class="section-heading reveal">
             <div>
               <div class="eyebrow"><span class="section-number">03</span>TIMELINE</div>
-              <h2>教育与经历。</h2>
-              <p class="section-note">这一节只是佐证。真正想讲的，是上面那几步是怎么走过来的。</p>
+              <h2>做过的事，留下了结果。</h2>
+              <p class="section-note">用时间线补全背景，也把每个阶段的结果和方法放回现场。</p>
             </div>
             <div class="filters no-print" id="resume-filters"></div>
           </div>
@@ -119,9 +126,9 @@
       <div class="shell">
         <div class="footer-top">
           <div>
-            <div class="eyebrow" style="margin-bottom: 14px">STILL BECOMING</div>
-            <h2>还在长。</h2>
-            <p>这一页会持续更新。下一个阶段，正在路上。</p>
+            <div class="eyebrow" style="margin-bottom: 14px">STILL IN PROGRESS</div>
+            <h2>下一段经历，继续展开。</h2>
+            <p>保持好奇，把问题做深，也把作品交到真实的人手里。</p>
           </div>
           <a class="button" href="index.html">回到首页 ↑</a>
         </div>

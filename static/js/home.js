@@ -11,6 +11,18 @@ const STAGE_LABEL = { start: "起点", turn: "转折", now: "现在", next: "下
 /* ---------------------------- 3D 环绕场景 ---------------------------- */
 /* 移植 personal-orbit 的 W21 场景：拖动旋转 / 滑杆开合 / 自动呼吸。 */
 
+function loadSceneRuntime() {
+  const assets = [...document.querySelectorAll('script[type="application/x-ballball-lazy-scene"]')];
+  return assets.reduce((chain, asset) => chain.then(() => new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = asset.src;
+    script.onload = resolve;
+    script.onerror = () => reject(new Error("三维场景加载失败"));
+    document.body.appendChild(script);
+    asset.remove();
+  })), Promise.resolve());
+}
+
 function initScene() {
   const canvas = document.getElementById("scene");
   if (!canvas || !window.CreativeRuntime) return;
@@ -38,7 +50,7 @@ function initScene() {
     intensity: 0.32,
     seed: 42,
   };
-  let paused = reduced.matches, auto = true, failed = false;
+  let paused = reduced.matches, auto = true, failed = false, sceneVisible = true;
   let time = 1, raf = 0, last = 0, drag = null;
 
   const fold = document.getElementById("fold");
@@ -63,7 +75,7 @@ function initScene() {
       }
     }
   }
-  function canAnimate() { return !paused && !failed && !document.hidden; }
+  function canAnimate() { return !paused && !failed && !document.hidden && sceneVisible; }
   function tick(now) {
     raf = 0;
     if (!canAnimate()) return;
@@ -84,10 +96,18 @@ function initScene() {
     document.body.classList.toggle("paused", paused);
     if (canAnimate()) raf = requestAnimationFrame(tick);
   }
+  if ("IntersectionObserver" in window) {
+    const visibilityObserver = new IntersectionObserver(([entry]) => {
+      sceneVisible = entry.isIntersecting;
+      if (sceneVisible) paint();
+      sync();
+    }, { threshold: 0.05 });
+    visibilityObserver.observe(canvas);
+  }
   function resize() {
     const r = canvas.getBoundingClientRect();
     if (!r.width || !r.height) return;
-    const dpr = Math.min(devicePixelRatio || 1, 1.5);
+    const dpr = Math.min(devicePixelRatio || 1, matchMedia("(max-width: 700px)").matches ? 1 : 1.5);
     canvas.width = Math.round(r.width * dpr);
     canvas.height = Math.round(r.height * dpr);
     paint();
@@ -173,7 +193,7 @@ function renderAbout(p) {
     el("div", { class: "about-orbits glass" }, [
       el("div", { class: "eyebrow", text: "ROOM FOR POSSIBILITY" }),
       el("div", { class: "big-word", text: "Stay curious." }),
-      el("p", { text: "不急着定义自己。让喜欢的事，慢慢长成自己的样子。" }),
+      el("p", { text: "在这里记录工作、电影与音乐，也把灵感慢慢做成作品。" }),
       el("div", { class: "about-highlights" },
         (p.highlights || []).slice(0, 4).map((h) =>
           el("span", { class: "chip", text: `${h.icon || ""} ${h.title || ""}`.trim() })
@@ -186,7 +206,7 @@ function renderAbout(p) {
       ),
     ]),
   ]);
-  return sectionWrap("about", heading(1, "A LITTLE ABOUT ME", "在这里，慢慢认识我。", p.location ? `在 ${p.location}` : ""), grid);
+  return sectionWrap("about", heading(1, "A LITTLE ABOUT ME", "工作之外，也有自己的小宇宙。", p.location ? `生活在 ${p.location}` : ""), grid);
 }
 
 function renderMoviesPreview() {
@@ -200,8 +220,8 @@ function renderMoviesPreview() {
   if (!top.length) {
     return sectionWrap(
       "movies-preview",
-      heading(3, "NOTES FROM THE DARK", "怕黑，也想多看一眼。", ""),
-      el("p", { class: "muted", text: "还没看过并写下评分的片子。看完一部再来，这里会自动亮起来。" })
+      heading(3, "NOTES FROM THE DARK", "每一次观影，都值得留下。", ""),
+      el("p", { class: "muted", text: "观影记录还在累积中。写下第一篇短评后，它就会出现在这里。" })
     );
   }
 
@@ -216,7 +236,7 @@ function renderMoviesPreview() {
       el("a", {
         class: "button",
         href: "movies.html",
-        text: `看全部 ${total} 部恐怖片档案 ↗`,
+        text: `浏览全部 ${total} 部观影记录 ↗`,
       }),
     ]),
   ]);
@@ -225,8 +245,8 @@ function renderMoviesPreview() {
     heading(
       3,
       "NOTES FROM THE DARK",
-      "怕黑，也想多看一眼。",
-      `从 ${total} 部里挑评分最高的 ${top.length} 部，主观评价，欢迎留下不同的看法。`
+      "每一次观影，都值得留下。",
+      `从 ${total} 部已看影片中选出评分最高的 ${top.length} 部。每个分数都是当下最真实的感受。`
     ),
     box
   );
@@ -248,12 +268,12 @@ function renderWorksPreview() {
   const box = el("div", {}, [
     grid,
     el("div", { style: { marginTop: "22px" } }, [
-      el("a", { class: "button", href: "works.html", text: "进入音乐构思 ↗" }),
+      el("a", { class: "button", href: "works.html", text: "听听创作片段 ↗" }),
     ]),
   ]);
   return sectionWrap(
     "works-preview",
-    heading(4, "SOUNDS, BEFORE THEY BECOME SONGS", "把想象，写进声音。", "先记录，再让它们慢慢成形。"),
+    heading(4, "SOUNDS, BEFORE THEY BECOME SONGS", "让一段旋律，慢慢长成作品。", "从灵感片段到完整作品，把每一步都收好。"),
     box
   );
 }
@@ -267,7 +287,7 @@ function renderResumePreview() {
   const path = steps.length
     ? el("ol", { class: "peek-path" },
         steps.map((s, i) =>
-          el("li", { class: "peek-path__node" }, [
+          el("li", { class: "peek-path__node reveal", style: { transitionDelay: `${i * 75}ms` } }, [
             el("span", { class: "peek-path__dot", text: String(i + 1) }),
             el("div", { class: "peek-path__body" }, [
               el("span", { class: "peek-path__stage", text: STAGE_LABEL[s.stage] || s.stage }),
@@ -277,7 +297,7 @@ function renderResumePreview() {
           ])
         )
       )
-    : el("p", { class: "empty", text: "还没写成长路径。" });
+    : el("p", { class: "empty", text: "成长记录正在整理中。" });
 
   // 在岗的排前面，其余按开始时间倒序
   const recent = [...state.resume]
@@ -288,10 +308,11 @@ function renderResumePreview() {
     )
     .slice(0, 3);
 
+  const current = recent.find((item) => item.kind === "work" && item.current);
   const list = recent.length
     ? el("ul", { class: "peek-list" },
-        recent.map((r) =>
-          el("li", { class: "peek-list__item" }, [
+        recent.map((r, index) =>
+          el("li", { class: "peek-list__item reveal", style: { transitionDelay: `${index * 80}ms` } }, [
             el("div", { class: "peek-list__row" }, [
               el("strong", { text: r.title }),
               el("span", {
@@ -303,22 +324,47 @@ function renderResumePreview() {
               ? el("span", { class: "peek-list__org", text: [r.role, r.org].filter(Boolean).join(" · ") })
               : null,
             r.summary ? el("p", { class: "peek-list__sum", text: r.summary }) : null,
+            r === current && r.highlights?.length
+              ? el("ul", { class: "peek-list__highlights" }, r.highlights.slice(0, 2).map((item) => el("li", { text: item })))
+              : null,
           ])
         )
       )
-    : el("p", { class: "empty", text: "还没有经历记录。" });
+    : el("p", { class: "empty", text: "新的经历，很快会在这里出现。" });
 
   const skills = [...state.skills]
     .sort((a, b) => (b.level || 0) - (a.level || 0))
     .slice(0, 6)
     .map((s) => el("span", { class: "chip", text: `${s.name} ${s.level ?? ""}`.trim() }));
 
-  const box = el("div", { class: "peek" }, [
-    el("div", { class: "peek__col glass" }, [
+  const evidence = (current?.highlights || []).join(" ");
+  const metricPatterns = [
+    { pattern: /(\d+\+?)\s*项检查点/, suffix: "项", label: "标准化检查点" },
+    { pattern: /(\d+(?:\.\d+)?%)\s*以上/, suffix: "+", label: "信息准确率" },
+    { pattern: /返工率降\s*(\d+%)/, suffix: "", label: "返工率下降" },
+  ];
+  const metrics = metricPatterns
+    .map(({ pattern, suffix, label }) => {
+      const match = evidence.match(pattern);
+      return match ? { value: `${match[1]}${suffix}`, label } : null;
+    })
+    .filter(Boolean);
+
+  const box = el("div", { class: "peek-wrap" }, [
+    metrics.length
+      ? el("div", { class: "peek-metrics", "aria-label": "近期工作成果" }, metrics.map((metric, index) =>
+          el("div", { class: "peek-metric glass reveal", style: { transitionDelay: `${index * 85}ms` } }, [
+            el("strong", { text: metric.value }),
+            el("span", { text: metric.label }),
+          ])
+        ))
+      : null,
+    el("div", { class: "peek" }, [
+    el("div", { class: "peek__col glass reveal" }, [
       el("div", { class: "eyebrow", text: "THE PATH · 成长路径" }),
       path,
     ]),
-    el("div", { class: "peek__col glass" }, [
+    el("div", { class: "peek__col peek__col--experience glass reveal" }, [
       el("div", { class: "eyebrow", text: "MOST RECENT · 最近经历" }),
       list,
       skills.length ? el("div", { class: "chips peek__skills" }, skills) : null,
@@ -326,11 +372,12 @@ function renderResumePreview() {
     el("div", { class: "peek__cta" }, [
       el("a", { class: "button primary", href: "resume.html", text: "查看完整简历 ↗" }),
     ]),
+    ]),
   ]);
 
   return sectionWrap(
     "resume-preview",
-    heading(2, "RESUME AT A GLANCE", "走过的路，都在简历里。", "成长路径 + 最近经历，完整版在简历页。"),
+    heading(2, "RESUME AT A GLANCE", "走过的路，都算数。", "从关键转折到近期工作，看看经历如何汇成今天的能力。"),
     box
   );
 }
@@ -371,10 +418,18 @@ async function boot() {
 
     document.getElementById("profile-name").textContent = profile.name || "Ballball";
     document.getElementById("profile-intro").textContent =
-      profile.tagline || "在恐怖片里找灵感，在音乐里找节奏。";
+      profile.tagline || "把喜欢的事认真做下去：看电影、写音乐，也把想法变成能用的工具。";
 
     await renderSections();
-    initScene();
+    const sceneAssets = [...document.querySelectorAll('script[type="application/x-ballball-lazy-scene"]')];
+    if (sceneAssets.length) {
+      const load = () => loadSceneRuntime().then(initScene).catch(() => {
+        const box = document.getElementById("scene-error");
+        if (box) { box.textContent = "三维场景暂时无法加载，正文仍可正常浏览。"; box.hidden = false; }
+      });
+      if ("requestIdleCallback" in window) requestIdleCallback(load, { timeout: 1800 });
+      else setTimeout(load, 300);
+    }
     initReveal();
     initCursor();
   } catch (err) {

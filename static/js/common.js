@@ -137,6 +137,11 @@ function toast(message, type = "ok") {
 let revealObserver = null;
 
 function initReveal(scope = document) {
+  document.documentElement.classList.add("motion-ready");
+  if (!("IntersectionObserver" in window)) {
+    scope.querySelectorAll(".reveal").forEach((el) => el.classList.add("in-view"));
+    return;
+  }
   if (!revealObserver) {
     revealObserver = new IntersectionObserver(
       (entries) => {

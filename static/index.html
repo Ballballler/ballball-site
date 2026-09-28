@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>Ballball 的主页 · 自我介绍 / 简历 / 恐怖电影 / 音乐构思</title>
+    <title>Ballball｜个人主页与创作档案</title>
     <meta
       name="description"
-      content="Ballball 的个人主页：以自我介绍开场，含简历与技能三维分布、恐怖电影评价档案、以及正在构思的音乐作品。"
+      content="记录工作与成长，也收藏恐怖电影、音乐片段和亲手做出来的小工具。欢迎认识 Ballball。"
     />
     <meta name="theme-color" content="#070b12" />
     <meta name="color-scheme" content="dark" />
@@ -16,7 +16,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Ballball 的主页" />
     <meta property="og:title" content="Ballball 的主页" />
-    <meta property="og:description" content="在恐怖片里找灵感，在音乐里找节奏，在代码里把它们落地。" />
+    <meta property="og:description" content="记录工作与成长，也收藏恐怖电影、音乐片段和亲手做出来的小工具。" />
     <meta property="og:url" content="/" />
     <meta property="og:image" content="/og-image.png" />
     <meta property="og:image:width" content="1200" />
@@ -54,10 +54,10 @@
         <div class="hero-copy">
           <div class="eyebrow"><span class="dot"></span>A SMALL UNIVERSE, STILL IN MOTION</div>
           <h1 id="hero-heading">你好，我是<br /><span id="profile-name">Ballball</span></h1>
-          <p id="profile-intro">在恐怖片里找灵感，在音乐里找节奏。</p>
+          <p id="profile-intro">把喜欢的事认真做下去：看电影、写音乐，也把想法变成能用的工具。</p>
           <div class="hero-actions">
-            <a class="button primary" href="movies.html">看恐怖电影 <span aria-hidden="true">↗</span></a>
-            <a class="button" href="#sections">先认识一下 <span aria-hidden="true">↓</span></a>
+            <a class="button primary" href="movies.html">翻开观影档案 <span aria-hidden="true">↗</span></a>
+            <a class="button" href="#sections">继续认识我 <span aria-hidden="true">↓</span></a>
           </div>
           <div class="hero-foot"><i></i><span>MUSIC / CINEMA / LITTLE THOUGHTS</span></div>
         </div>
@@ -89,7 +89,7 @@
             <button id="auto-fold" type="button" aria-pressed="true">自动</button>
             <button id="reset-scene" type="button">重置</button>
           </div>
-          <div class="scene-hint">拖动 / 方向键旋转 · Home 重置 · 滑杆调整</div>
+          <div class="scene-hint">好奇心，让灵感继续运行</div>
         </div>
       </section>
 
@@ -102,14 +102,14 @@
         <div class="footer-top">
           <div>
             <div class="eyebrow" style="margin-bottom: 14px">LEAVE A LITTLE ROOM FOR WONDER</div>
-            <h2>下一个灵感，正在路上。</h2>
+            <h2>保持好奇，继续创造。</h2>
             <p id="contact-text"></p>
           </div>
           <a class="button" href="#home">回到起点 ↑</a>
         </div>
         <div class="footer-meta">
           <span>BALLBALL · 个人主页<br />自我介绍 / 简历 / 恐怖电影 / 音乐构思</span>
-          <span>三维场景为程序化生成，仅请求一张本地壁纸<br />© Ballball</span>
+          <span>在好奇、创造与日常之间，继续前行<br />© Ballball</span>
         </div>
         <p class="footer__credit">
           电影资料与海报来自
@@ -124,9 +124,9 @@
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
     <script>window.CreativeI18n={errors:{webglUnsupported:"当前浏览器不支持 WebGL 2，请使用开启硬件加速的现代浏览器。",canvasUnavailable:"无法使用画布。",contextUnavailable:"图形上下文暂不可用，请刷新重试。",invalidScene:"三维场景暂不可用。"}};</script>
-    <script src="vendor/three.min.js"></script>
-    <script src="vendor/creative-runtime.js"></script>
-    <script src="vendor/creative-scenes.js"></script>
+    <script type="application/x-ballball-lazy-scene" src="vendor/three.min.js"></script>
+    <script type="application/x-ballball-lazy-scene" src="vendor/creative-runtime.js"></script>
+    <script type="application/x-ballball-lazy-scene" src="vendor/creative-scenes.js"></script>
     <script src="js/common.js"></script>
     <script src="js/home.js"></script>
   </body>

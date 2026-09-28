@@ -24,12 +24,9 @@ function renderIntro(profile) {
   document.getElementById("resume-name").textContent = profile.name || "Ballball";
   document.getElementById("resume-headline").textContent =
     profile.headline || profile.tagline || "";
-  // 开场用 bio 的开头：首段太短就带上第二段，保证开场有分量又不冗长
-  const paras = (profile.bio || "").trim().split(/\n\s*\n/).filter(Boolean);
-  let intro = paras[0] || "";
-  if (intro.length < 40 && paras[1]) intro = `${paras[0]}\n\n${paras[1]}`;
-  document.getElementById("resume-intro").textContent = intro;
-  document.title = `简历 · ${profile.name || "Ballball"}`;
+  document.getElementById("resume-intro").textContent =
+    "从产品实习、商务拓展到多区域官网运营，我持续在用户、内容与业务之间寻找答案。擅长把复杂要求拆成清晰标准，也习惯用数据验证方案。工作之外，我独立搭建全栈项目，把运营经验、产品思维和工程实践放在同一张桌上。";
+  document.title = `简历｜内容运营、产品思维与全栈实践 · ${profile.name || "Ballball"}`;
 
   const contacts = document.getElementById("resume-contacts");
   if (!contacts) return;
@@ -50,6 +47,29 @@ function renderIntro(profile) {
         text: `🔗 ${l.label || l.url}`,
       })
     );
+  });
+}
+
+function renderResumeKv() {
+  const host = document.getElementById("resume-kv");
+  if (!host) return;
+  const currentWork = state.items.find((item) => item.kind === "work" && item.current);
+  const proof = (currentWork?.highlights || []).join(" ");
+  const checks = proof.match(/(\d+\+?)\s*项检查点/);
+  const accuracy = proof.match(/(\d+(?:\.\d+)?%)\s*以上/);
+  const rework = proof.match(/返工率降\s*(\d+%)/);
+  const facts = [
+    checks && [checks[1], "标准化质检检查点"],
+    accuracy && [`${accuracy[1]}+`, "信息准确率"],
+    rework && [rework[1], "返工率下降"],
+  ].filter(Boolean);
+  host.hidden = facts.length === 0;
+  host.textContent = "";
+  facts.forEach(([value, label], index) => {
+    host.appendChild(el("div", { class: "resume-kv__item reveal", style: { transitionDelay: `${index * 90}ms` } }, [
+      el("strong", { text: value }),
+      el("span", { text: label }),
+    ]));
   });
 }
 
@@ -85,13 +105,14 @@ function renderSkills(skills) {
   });
 
   groups.forEach((list, name) => {
-    const box = el("div", { class: "skill-group" });
+    const box = el("div", { class: "skill-group reveal" });
     box.appendChild(el("div", { class: "skill-group__title", text: name }));
     list.forEach((s) => {
       const meter = el("div", { class: "skill-row__meter" }, [
-        el("div", { class: "skill-row__fill", style: { width: "0%" } }),
+        el("div", { class: "skill-row__fill" }),
       ]);
       meter.style.setProperty("--skill-color", s.color || "#00b8d4");
+      meter.style.setProperty("--skill-level", `${s.level}%`);
       box.appendChild(
         el("div", { class: "skill-row", title: s.note || "" }, [
           el("div", { class: "skill-row__name", text: s.name }),
@@ -99,12 +120,6 @@ function renderSkills(skills) {
           el("div", { class: "skill-row__val", text: `${s.level}` }),
         ])
       );
-      // 进入视口后再生长
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          meter.firstChild.style.width = `${s.level}%`;
-        }, 200);
-      });
     });
     wrap.appendChild(box);
   });
@@ -311,6 +326,7 @@ async function boot() {
     renderIntro(profile);
     renderJourney();
     renderSkills(state.skills);
+    renderResumeKv();
     renderFilters();
     renderTimeline();
     // 区块的显示与顺序由后台「页面区块」决定
