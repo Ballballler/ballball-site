@@ -20,6 +20,10 @@ dist/
 
 # 后台上传的图片（和 data/ 同类，属于数据不是代码，用 deploy/backup.sh 备份）
 static/uploads/*
+# TMDB 海报的本地缓存，由 tools/cache_movie_posters.py 落盘。
+# 是抓下来的第三方图片（数据不是代码），跟 uploads 一样不进仓库；
+# 但导出静态站时会随 dist/ 一起进 gh-pages，线上照常能显示。
+static/posters/*
 
 # 本地备份产物（含数据库与站点截图，不进仓库）
 backup/

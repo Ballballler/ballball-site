@@ -160,8 +160,17 @@ class Movie(Base, TimestampMixin):
     def poster_url(self) -> str:
         """渲染时真正用的海报地址。
 
-        优先级：TMDB 相对路径（走 CDN，不占本地磁盘） > 手填的 poster > 空（前端给占位图）。
+        优先级：本地缓存（static/posters/<id>.jpg） > 手填的 poster > TMDB CDN > 空（前端给占位图）。
+
+        本地优先是为了稳。实测 TMDB 的图床在国内浏览器里经常「请求挂起」——
+        既不返回也不报错，`<img>` 一直是空的，onerror 也不触发，海报位就塌成
+        一条深色空条。tools/cache_movie_posters.py 会把图落到 static/posters/，
+        有本地文件就走本地，没有才回落到 CDN。
         """
+        from .config import STATIC_DIR  # 局部导入，避免 models ↔ config 循环依赖
+
+        if self.id is not None and (STATIC_DIR / "posters" / f"{self.id}.jpg").exists():
+            return f"/posters/{self.id}.jpg"
         if self.poster_path:
             from .tmdb import image_url  # 局部导入，避免 models ↔ tmdb 循环依赖
 

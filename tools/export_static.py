@@ -103,7 +103,7 @@ def _inline_script(var: str, payload: str) -> str:
 #
 # 修法是把这些值改成相对路径（去掉开头的 /），让它们跟着当前页面走。
 # 只动上面这几个「本地资源」字段，不碰 TMDB 的 https 外链。
-_LOCAL_URL_FIELDS = ("audio_url", "avatar", "cover", "poster")
+_LOCAL_URL_FIELDS = ("audio_url", "avatar", "cover", "poster", "poster_url")
 
 
 def _relativize_local_urls(node):
