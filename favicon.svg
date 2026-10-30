@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <title>Ballball</title>
+  <defs>
+    <linearGradient id="orbit" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#00b8d4"/>
+      <stop offset="1" stop-color="#7c5cff"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 底板：和站点深色区块同一个墨色 -->
+  <rect width="64" height="64" rx="14" fill="#0b1220"/>
+
+  <!-- 倾斜的行星轨道，呼应首页 3D 环绕 -->
+  <ellipse cx="32" cy="32" rx="25" ry="10" fill="none"
+           stroke="url(#orbit)" stroke-width="2.6" opacity="0.95"
+           transform="rotate(-22 32 32)"/>
+  <circle cx="32" cy="32" r="16.5" fill="none"
+          stroke="#00b8d4" stroke-width="1.6" opacity="0.45"/>
+
+  <!-- 品牌字 B。字体只作提示，缺字体时浏览器会退回 sans-serif -->
+  <text x="32" y="42" text-anchor="middle"
+        font-family="Chakra Petch, Segoe UI, PingFang SC, Helvetica, Arial, sans-serif"
+        font-size="30" font-weight="700" fill="#ffffff">B</text>
+
+  <!-- 轨道上的卫星：站点主色 -->
+  <circle cx="55" cy="24" r="3.4" fill="#00e5b0"/>
+</svg>

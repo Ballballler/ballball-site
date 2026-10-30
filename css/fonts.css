@@ -1,0 +1,52 @@
+/* 自托管字体：由 deploy/fetch_fonts.py 生成，勿手改 */
+/* 展示字 Chakra Petch（未来感）+ 等宽 JetBrains Mono（标签与数字） */
+
+@font-face {
+  font-family: 'Chakra Petch';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('../fonts/chakra-petch-500.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC,
+                 U+2000-206F, U+2074, U+20AC, U+2122, U+2191;
+}
+
+@font-face {
+  font-family: 'Chakra Petch';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('../fonts/chakra-petch-600.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC,
+                 U+2000-206F, U+2074, U+20AC, U+2122, U+2191;
+}
+
+@font-face {
+  font-family: 'Chakra Petch';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../fonts/chakra-petch-700.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC,
+                 U+2000-206F, U+2074, U+20AC, U+2122, U+2191;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/jetbrains-mono-400.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC,
+                 U+2000-206F, U+2074, U+20AC, U+2122, U+2191;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../fonts/jetbrains-mono-700.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC,
+                 U+2000-206F, U+2074, U+20AC, U+2122, U+2191;
+}

@@ -1,0 +1,577 @@
+/* ========================================================================
+   glass.css —— 液态玻璃组件库
+   卡片 / 按钮 / 标签 / 表单 / 进度条 / 弹层 / 提示
+   ===================================================================== */
+
+/* ---------------------------- 玻璃卡片 ---------------------------- */
+
+.glass {
+  position: relative;
+  isolation: isolate;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  box-shadow: var(--glass-shadow),
+    inset 0 1px 0 var(--glass-inner),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.35);
+  overflow: hidden;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.45s ease, background 0.45s ease;
+}
+
+.glass--strong {
+  background: var(--glass-bg-strong);
+}
+
+.glass--soft {
+  background: var(--glass-bg-soft);
+}
+
+.glass--spot::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(
+    420px circle at var(--mx) var(--my),
+    rgba(255, 255, 255, 0.9),
+    rgba(255, 255, 255, 0) 62%
+  );
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.glass--spot:hover::before {
+  opacity: 1;
+}
+
+/* 一层掠过的高光 */
+.glass--shine::after {
+  content: "";
+  position: absolute;
+  top: -10%;
+  left: -70%;
+  width: 45%;
+  height: 120%;
+  background: linear-gradient(
+    100deg,
+    transparent,
+    rgba(255, 255, 255, 0.6),
+    transparent
+  );
+  transform: skewX(-18deg);
+  transition: left 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+.glass--shine:hover::after {
+  left: 130%;
+}
+
+.glass--lift:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--glass-shadow-hover),
+    inset 0 1px 0 var(--glass-inner);
+}
+
+.glass--pad {
+  padding: clamp(20px, 3vw, 32px);
+}
+
+/* 卡片顶部一道彩色描边 */
+.glass--accent::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--cyan), var(--violet), var(--rose));
+  opacity: 0.85;
+}
+
+/* ---------------------------- 按钮 ---------------------------- */
+
+.btn {
+  --btn-bg: var(--glass-bg-strong);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 20px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: var(--btn-bg);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.25s ease, background 0.25s ease, color 0.25s ease;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px -12px rgba(15, 23, 42, 0.4);
+}
+
+.btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn--primary {
+  background: linear-gradient(120deg, #06b6d4, #7c3aed);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 14px 30px -14px rgba(124, 58, 237, 0.75);
+}
+
+.btn--primary:hover {
+  box-shadow: 0 18px 38px -14px rgba(124, 58, 237, 0.9);
+}
+
+.btn--rose {
+  background: linear-gradient(120deg, #fb7185, #f43f5e);
+  border-color: transparent;
+  color: #fff;
+}
+
+.btn--ghost {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.btn--sm {
+  padding: 7px 14px;
+  font-size: 0.82rem;
+}
+
+.btn--icon {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: 50%;
+}
+
+/* ---------------------------- 标签 ---------------------------- */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.chip--dot::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--chip-color, var(--cyan));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--chip-color, #22d3ee) 25%, transparent);
+}
+
+.chip--solid {
+  background: var(--chip-color, var(--cyan));
+  color: #fff;
+  border-color: transparent;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ---------------------------- 表单 ---------------------------- */
+
+.field {
+  display: block;
+  margin-bottom: 16px;
+}
+
+.field__label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  margin-bottom: 7px;
+}
+
+.field__hint {
+  font-size: 0.76rem;
+  color: var(--ink-mute);
+  margin-top: 6px;
+}
+
+.input,
+.textarea,
+.select {
+  width: 100%;
+  padding: 11px 14px;
+  font: inherit;
+  font-size: 0.94rem;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: var(--radius-sm);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.06);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.input:focus,
+.textarea:focus,
+.select:focus {
+  outline: none;
+  border-color: #22d3ee;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.22);
+}
+
+.textarea {
+  min-height: 110px;
+  resize: vertical;
+  line-height: 1.65;
+}
+
+.input--row {
+  display: flex;
+  gap: 10px;
+}
+
+/* ---------------------------- 进度条 / 评分 ---------------------------- */
+
+.meter {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.09);
+  overflow: hidden;
+  position: relative;
+}
+
+.meter__fill {
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--cyan), var(--violet));
+  transition: width 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.meter__fill--rose {
+  background: linear-gradient(90deg, #fb7185, #f43f5e);
+}
+
+.meter__fill--amber {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+
+/* 五级强度点 */
+.level-dots {
+  display: inline-flex;
+  gap: 5px;
+}
+
+.level-dots i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.14);
+  transition: background 0.3s ease, transform 0.3s ease;
+}
+
+.level-dots i.on {
+  background: linear-gradient(135deg, var(--cyan), var(--violet));
+  transform: scale(1.15);
+}
+
+/* 评分环 */
+.score-ring {
+  --size: 62px;
+  --pct: 0;
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  position: relative;
+  background: conic-gradient(
+    from -90deg,
+    #06b6d4 0turn,
+    #7c3aed calc(var(--pct) * 1turn),
+    rgba(15, 23, 42, 0.1) calc(var(--pct) * 1turn)
+  );
+  transition: --pct 1s linear;
+  animation: ring-in 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.score-ring::after {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.score-ring span {
+  position: relative;
+  z-index: 1;
+  font-weight: 800;
+  font-size: 1.02rem;
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes ring-in {
+  from {
+    transform: scale(0.6) rotate(-40deg);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* ---------------------------- 弹层 ---------------------------- */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.35);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  animation: fade-in 0.25s ease both;
+}
+
+.modal[hidden] {
+  display: none;
+}
+
+.modal__panel {
+  width: min(760px, 100%);
+  max-height: 88dvh;
+  overflow-y: auto;
+  border-radius: var(--radius-lg);
+  padding: clamp(20px, 3vw, 34px);
+  animation: pop-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+}
+
+.modal__close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+}
+
+/* ---------------------------- Toast ---------------------------- */
+
+.toast-wrap {
+  position: fixed;
+  bottom: 26px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  pointer-events: none;
+}
+
+.toast {
+  padding: 11px 20px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(15, 23, 42, 0.88);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 16px 34px -14px rgba(15, 23, 42, 0.6);
+  animation: toast-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.toast--ok {
+  background: linear-gradient(120deg, #059669, #10b981);
+}
+
+.toast--err {
+  background: linear-gradient(120deg, #e11d48, #f43f5e);
+}
+
+.toast.out {
+  animation: toast-out 0.3s ease forwards;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.94);
+  }
+}
+
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+}
+
+/* ========================================================================
+   3D 标签球
+   ===================================================================== */
+
+.sphere {
+  --sphere-size: 300px;
+  position: relative;
+  width: var(--sphere-size);
+  height: var(--sphere-size);
+  margin-inline: auto;
+  cursor: grab;
+  touch-action: none;
+  perspective: 900px;
+  outline: none;
+}
+
+.sphere.is-dragging {
+  cursor: grabbing;
+}
+
+/* 球体中心的柔光，让球看起来是「一团」而不是散点 */
+.sphere::before {
+  content: "";
+  position: absolute;
+  inset: 16%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(0, 184, 212, 0.22),
+    rgba(124, 92, 255, 0.12) 55%,
+    transparent 72%
+  );
+  filter: blur(12px);
+  pointer-events: none;
+}
+
+.sphere__stage {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  pointer-events: none;
+}
+
+.sphere__tag {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: -0.6em 0 0 0;
+  transform: translate3d(0, 0, 0);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--tag-color, #00b8d4) 72%, #0b1220);
+  text-shadow: 0 0 14px color-mix(in srgb, var(--tag-color, #00b8d4) 40%, transparent);
+  will-change: transform, opacity;
+  user-select: none;
+  /* 熟练度越高越亮 */
+  filter: saturate(calc(0.6 + var(--tag-weight, 0.6) * 0.8));
+}
+
+.sphere__tag::before {
+  content: "";
+}
+
+/* ========================================================================
+   3D 悬浮卡片（鼠标视差）
+   ===================================================================== */
+
+.tilt {
+  transform-style: preserve-3d;
+  transition: transform 0.4s var(--ease-out), box-shadow 0.4s var(--ease-out);
+  will-change: transform;
+}
+
+.tilt__layer {
+  transform: translateZ(28px);
+}
+
+/* ========================================================================
+   全息卡片：玻璃 + 顶部渐变描边 + 四角括号
+   ===================================================================== */
+
+.holo {
+  background: linear-gradient(
+      150deg,
+      rgba(255, 255, 255, 0.72),
+      rgba(255, 255, 255, 0.48)
+    ),
+    linear-gradient(120deg, rgba(0, 184, 212, 0.09), rgba(124, 92, 255, 0.09));
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.holo:hover {
+  box-shadow: var(--glass-shadow-hover), inset 0 1px 0 var(--glass-inner),
+    0 0 26px -6px rgba(0, 184, 212, 0.55);
+}
+
+/* ---------------------------- 空状态 / 骨架 ---------------------------- */
+
+.empty {
+  padding: 44px 20px;
+  text-align: center;
+  color: var(--ink-mute);
+  font-size: 0.94rem;
+}
+
+.skeleton {
+  border-radius: var(--radius);
+  background: linear-gradient(
+      100deg,
+      rgba(255, 255, 255, 0.5) 30%,
+      rgba(255, 255, 255, 0.85) 50%,
+      rgba(255, 255, 255, 0.5) 70%
+    )
+    0 0 / 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
